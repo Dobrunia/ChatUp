@@ -3,13 +3,13 @@ import { Capacitor } from '@capacitor/core';
 import { trpc } from '../api';
 
 export class PushService {
-  public async initPush() {
+  public async initPush(): Promise<boolean> {
     if (Capacitor.getPlatform() === 'web') {
+      /** TODO: implement Web Push API (navigator.serviceWorker + PushManager) for PWA support */
       console.warn('Push notifications not available on web for MVP');
-      return;
+      return false;
     }
 
-    // Check permissions
     let permStatus = await PushNotifications.checkPermissions();
 
     if (permStatus.receive === 'prompt') {
@@ -17,21 +17,18 @@ export class PushService {
     }
 
     if (permStatus.receive !== 'granted') {
-      throw new Error('User denied permissions!');
+      return false;
     }
 
-    // Register with Apple / Google to receive token
     await PushNotifications.register();
+    return true;
   }
 
   public registerListeners() {
     if (Capacitor.getPlatform() === 'web') return;
 
-    // On success, we should send the token to our server
     PushNotifications.addListener('registration', (token) => {
       console.log('Push registration success, token: ' + token.value);
-      // For MVP: Send this to backend to associate with userId
-      // trpc.profile.updateDeviceToken.mutate({ token: token.value });
     });
 
     PushNotifications.addListener('registrationError', (error: any) => {
@@ -44,7 +41,6 @@ export class PushService {
 
     PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
       console.log('Push action performed: ', notification);
-      // Handle navigation to chat...
     });
   }
 }

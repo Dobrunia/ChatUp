@@ -1,76 +1,108 @@
-import { db } from '../db';
 import { trpc } from '../api';
-import { useOnline } from '@vueuse/core';
+import { db } from '../db';
+import { v4 as uuidv4 } from 'uuid';
+import { useChatStore } from '../stores/chat';
+import { useNetworkState } from '../composables/useNetworkState';
 import { watch } from 'vue';
 
-export class ResilienceService {
-  private processing = false;
+const MAX_RETRIES = 5;
 
-  constructor() {
-    const isOnline = useOnline();
+class ResilienceService {
+  private processingPromise: Promise<void> | null = null;
+  private isOnline = true;
 
-    // Listen to offline -> online transitions
+  public init() {
+    const { isOnline } = useNetworkState();
+    
     watch(isOnline, (online) => {
+      this.isOnline = online;
       if (online) {
         this.processOutgoingQueue();
       }
-    });
+    }, { immediate: true });
   }
 
-  // Enqueue message when offline or before sending
-  async enqueueMessage(dialogId: string, clientMessageId: string, content: string) {
-    await db.outgoingMessages.put({
+  public async enqueueMessage(dialogId: string, content: string, attachmentIds: string[] = []) {
+    const clientMessageId = uuidv4();
+    const chatStore = useChatStore();
+
+    chatStore.addOptimisticMessage({
+      id: '',
+      clientMessageId,
+      dialogId,
+      senderId: 'optimistic',
+      content,
+      createdAt: new Date(),
+      deletedAt: null
+    });
+
+    await db.outgoingMessages.add({
       clientMessageId,
       dialogId,
       content,
-      createdAt: Date.now()
+      attachmentIds,
+      createdAt: Date.now(),
+      retryCount: 0
     });
 
-    // Try to process immediately
-    this.processOutgoingQueue();
-  }
-
-  // Process the queue
-  async processOutgoingQueue() {
-    if (this.processing) return;
-    this.processing = true;
-
-    try {
-      const messages = await db.outgoingMessages.orderBy('createdAt').toArray();
-
-      for (const msg of messages) {
-        try {
-          await trpc.message.send.mutate({
-            dialogId: msg.dialogId,
-            clientMessageId: msg.clientMessageId,
-            content: msg.content
-          });
-          // On success, remove from queue
-          await db.outgoingMessages.delete(msg.clientMessageId);
-        } catch (e: any) {
-          // If collision (200-equivalent was sent by trpc/prisma due to P2002),
-          // TRPC will not throw an error if the server returned success.
-          // If network error, we abort the queue processing to try again later.
-          if (e.message?.includes('fetch failed') || e.message?.includes('Failed to fetch')) {
-            break;
-          }
-          // If it's a fatal error (e.g. Forbidden), maybe we should remove it?
-          // For MVP, we delete to avoid infinite loop on bad request.
-          if (e.data?.httpStatus >= 400 && e.data?.httpStatus < 500) {
-             await db.outgoingMessages.delete(msg.clientMessageId);
-          }
-        }
-      }
-    } finally {
-      this.processing = false;
+    if (this.isOnline) {
+      this.processOutgoingQueue();
     }
   }
 
-  // Restore state on app restart
-  async restoreStateOnStart() {
-    // Re-trigger processing on boot if we are online
-    if (navigator.onLine) {
-      await this.processOutgoingQueue();
+  public processOutgoingQueue(): Promise<void> {
+    if (this.processingPromise || !this.isOnline) {
+      return this.processingPromise ?? Promise.resolve();
+    }
+
+    this.processingPromise = this._processQueue().finally(() => {
+      this.processingPromise = null;
+    });
+
+    return this.processingPromise;
+  }
+
+  private async _processQueue() {
+    const pendingMessages = await db.outgoingMessages.orderBy('createdAt').toArray();
+    const chatStore = useChatStore();
+
+    for (const msg of pendingMessages) {
+      if (!this.isOnline) break;
+
+      if (msg.retryCount >= MAX_RETRIES) {
+        await db.outgoingMessages.delete(msg.clientMessageId);
+        continue;
+      }
+
+      try {
+        const result = await trpc.message.send.mutate({
+          dialogId: msg.dialogId,
+          content: msg.content,
+          clientMessageId: msg.clientMessageId
+        });
+
+        await db.outgoingMessages.delete(msg.clientMessageId);
+        chatStore.updateMessageStatus(msg.clientMessageId, { id: result.id });
+
+      } catch (error: unknown) {
+        const httpStatus = (error as any)?.data?.httpStatus as number | undefined;
+        const isFatal = httpStatus !== undefined && httpStatus >= 400 && httpStatus < 500 && httpStatus !== 429;
+
+        if (isFatal) {
+          await db.outgoingMessages.delete(msg.clientMessageId);
+        } else {
+          await db.outgoingMessages.update(msg.clientMessageId, {
+            retryCount: msg.retryCount + 1
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  public async restoreStateOnStart() {
+    if (this.isOnline) {
+      this.processOutgoingQueue();
     }
   }
 }

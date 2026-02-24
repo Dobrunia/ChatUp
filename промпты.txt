@@ -1,3 +1,5 @@
 @mobile-design @frontend-design @tailwind-patterns @ui-ux-pro-max
 
-@senior-fullstack @frontend-developer @backend-dev-guidelines @api-patterns @database-design @typescript-expert @javascript-pro @react-best-practices @nodejs-best-practices @mobile-developer @senior-architect @architecture-patterns @microservices-patterns @event-sourcing-architect @architecture-decision-records
+@senior-fullstack @frontend-developer @backend-dev-guidelines @api-patterns @database-design @typescript-expert @javascript-pro @nodejs-best-practices @mobile-developer @senior-architect @architecture-patterns @microservices-patterns @event-sourcing-architect @architecture-decision-records
+
+@.agent/skills/skills/senior-fullstack/  @.agent/skills/skills/backend-dev-guidelines/ @.agent/skills/skills/api-patterns/ @.agent/skills/skills/database-design/ @.agent/skills/skills/typescript-expert/ @.agent/skills/skills/javascript-pro/ @.agent/skills/skills/nodejs-best-practices/ @.agent/skills/skills/mobile-developer/ @.agent/skills/skills/senior-architect/ @.agent/skills/skills/architecture-patterns/ @.agent/skills/skills/microservices-patterns/ @.agent/skills/skills/event-sourcing-architect/ @.agent/skills/skills/architecture-decision-records/ 

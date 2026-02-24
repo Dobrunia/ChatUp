@@ -20,7 +20,7 @@ export const mediaRouter = router({
 
   getDownloadUrl: protectedProcedure
     .input(z.object({ attachmentId: z.string() }))
-    .query(async ({ input }) => {
-      return MediaService.getDownloadUrl(input.attachmentId);
+    .query(async ({ input, ctx }) => {
+      return MediaService.getDownloadUrl(input.attachmentId, ctx.user.userId);
     })
 });

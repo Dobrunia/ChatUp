@@ -84,7 +84,8 @@ export class DialogService {
       const lastMessage = dm.dialog.messages[0] || null;
       // unread computation: in real life we count messages after lastReadAt. MVP approximation
       // Since it's an expensive count, we might just leave a boolean or do a simple count.
-      const unreadCount = 0; // MVP placeholder, proper count needs separate query or view
+      /** TODO: implement real unread count — COUNT messages WHERE createdAt > dm.lastReadAt AND senderId != userId */
+      const unreadCount = 0;
 
       const otherUser = dm.dialog.members[0]?.user;
 

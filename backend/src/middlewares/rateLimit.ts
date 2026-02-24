@@ -2,6 +2,14 @@ import { TRPCError } from '@trpc/server';
 
 const memoryStore = new Map<string, { count: number; resetAt: number }>();
 
+const CLEANUP_INTERVAL_MS = 60_000;
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of memoryStore) {
+    if (now > record.resetAt) memoryStore.delete(key);
+  }
+}, CLEANUP_INTERVAL_MS);
+
 export function rateLimit(key: string, limit: number, windowMs: number) {
   const now = Date.now();
   const record = memoryStore.get(key);

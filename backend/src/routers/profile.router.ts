@@ -1,4 +1,5 @@
 import { protectedProcedure, router } from '../trpc/trpc';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { ProfileService } from '../domain/services/profile.service';
 import { rateLimit } from '../middlewares/rateLimit';
@@ -27,7 +28,7 @@ export const profileRouter = router({
       rateLimit(`updateUsername:${ctx.user.userId}`, 5, 60 * 60 * 1000); // 5 times per hour
       
       if (!usernameRegex.test(input.username)) {
-        throw new Error('Username must be 3-20 lowercase english letters');
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Username must be 3-20 lowercase english letters' });
       }
 
       return ProfileService.updateUsername(ctx.user.userId, input.username);

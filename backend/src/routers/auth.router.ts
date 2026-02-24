@@ -1,11 +1,17 @@
 import { publicProcedure, protectedProcedure, router } from '../trpc/trpc';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import argon2 from 'argon2';
 import { AuthService } from '../domain/services/auth.service';
 import { rateLimit } from '../middlewares/rateLimit';
 
-function getIp(req: any) {
-  return req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+function getIp(req: any): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string') {
+    const parts = forwarded.split(',');
+    return parts[parts.length - 1].trim();
+  }
+  return req.socket?.remoteAddress || 'unknown';
 }
 
 const usernameRegex = /^[a-z]{3,20}$/;
@@ -25,7 +31,7 @@ export const authRouter = router({
       rateLimit(`signup:${getIp(ctx.req)}`, 5, 15 * 60 * 1000); // 5 per 15 minutes
 
       if (!usernameRegex.test(input.username)) {
-        throw new Error('Username must be 3-20 lowercase english letters');
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Username must be 3-20 lowercase english letters' });
       }
 
       const passwordHash = await argon2.hash(input.password);

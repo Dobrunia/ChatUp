@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present",
+    "clean": "npm run clean -w shared --if-present && npm run clean -w backend --if-present && npm run clean -w frontend --if-present",
+    "build": "npm run build -w shared && npm run build -w backend && npm run build -w frontend",
     "lint": "npm run lint --workspaces --if-present"
   }
 }

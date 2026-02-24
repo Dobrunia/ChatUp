@@ -3,6 +3,7 @@ import { observable } from '@trpc/server/observable';
 import superjson from 'superjson';
 import type { AppRouter } from '../../../backend/src/routers';
 import { handleGlobalError } from '../utils/errorHandler';
+import { config } from '../config';
 
 // Custom link to intercept errors globally
 const errorHandlingLink: TRPCLink<AppRouter> = () => {
@@ -32,7 +33,7 @@ export const trpc = createTRPCProxyClient<AppRouter>({
   links: [
     errorHandlingLink,
     httpBatchLink({
-      url: 'http://localhost:3000/trpc',
+      url: config.api.url,
       headers() {
         const token = localStorage.getItem('token');
         if (token) {

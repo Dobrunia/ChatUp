@@ -62,8 +62,7 @@ export class MessageService {
     return prisma.message.findMany({
       where: { dialogId },
       take: limit,
-      skip: cursorId ? 1 : 0,
-      cursor: cursorId ? { id: cursorId } : undefined,
+      ...(cursorId && { skip: 1, cursor: { id: cursorId } }),
       orderBy: [
         { createdAt: 'desc' },
         { id: 'desc' } // Secondary stable sort

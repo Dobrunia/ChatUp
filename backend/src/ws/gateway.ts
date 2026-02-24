@@ -9,7 +9,7 @@ export class WsGateway {
   private connections = new Map<string, Set<WebSocket>>();
 
   constructor(server: any) {
-    this.wss = new WebSocketServer({ server });
+    this.wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 
     this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
       this.handleConnection(ws, req);
@@ -54,7 +54,7 @@ export class WsGateway {
     try {
       const parsed = JSON.parse(message);
       // Handle simple WS events like typing
-      if (parsed.event === WS_EVENTS.CLIENT.TYPING_START) {
+      if (parsed.type === WS_EVENTS.CLIENT.TYPING_START) {
         // Forward to dialog members... (Requires DB lookup or cache)
       }
     } catch (e) {
@@ -65,10 +65,14 @@ export class WsGateway {
   public emitToUser(userId: string, event: string, payload: any) {
     const userConnections = this.connections.get(userId);
     if (userConnections) {
-      const data = JSON.stringify({ event, payload });
+      const data = JSON.stringify({ type: event, data: payload });
       for (const ws of userConnections) {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send(data);
+          try {
+            ws.send(data);
+          } catch {
+            userConnections.delete(ws);
+          }
         }
       }
     }

@@ -4,22 +4,33 @@ export class SearchService {
   static async searchUsers(query: string, currentUserId: string, limit = 20) {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    
-    // Exact internal ID or fuzzy @username
+
+    const blockedIds = await this.getBlockedUserIds(currentUserId);
+
     return prisma.user.findMany({
       where: {
         OR: [
           { id: q },
           { username: { startsWith: q } }
         ],
-        id: { not: currentUserId }, // Exclude self
-        // Ensure not blocked by the user we are finding, or we haven't blocked them
-        // For MVP: Let's just exclude users we have blocked or who blocked us if possible
-        // But simpler: just fetch and filter or do it in query
+        id: { notIn: [currentUserId, ...blockedIds] },
       },
       select: { id: true, username: true, displayName: true, avatarUrl: true },
       take: limit,
     });
+  }
+
+  private static async getBlockedUserIds(userId: string): Promise<string[]> {
+    const blocks = await prisma.block.findMany({
+      where: { OR: [{ blockerId: userId }, { blockedId: userId }] },
+      select: { blockerId: true, blockedId: true },
+    });
+    const ids = new Set<string>();
+    for (const b of blocks) {
+      if (b.blockerId !== userId) ids.add(b.blockerId);
+      if (b.blockedId !== userId) ids.add(b.blockedId);
+    }
+    return [...ids];
   }
 
   static async blockUser(blockerId: string, blockedId: string) {

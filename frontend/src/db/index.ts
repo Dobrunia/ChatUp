@@ -4,8 +4,9 @@ export interface OutgoingMessage {
   clientMessageId: string;
   dialogId: string;
   content: string;
-  attachments?: string[];
+  attachmentIds?: string[];
   createdAt: number;
+  retryCount: number;
 }
 
 export class ChatUpDb extends Dexie {

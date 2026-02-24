@@ -38,14 +38,12 @@ export class Logger {
       return msg;
     }
 
-    // Structured JSON for production logging
     return JSON.stringify({
       level: level.toUpperCase(),
       timestamp,
       ...payload,
       ...(error && {
         error: error.message || error,
-        stack: error.stack,
       })
     });
   }
