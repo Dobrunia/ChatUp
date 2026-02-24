@@ -11,6 +11,12 @@ export const profileRouter = router({
     return ProfileService.getProfile(ctx.user.userId);
   }),
 
+  getById: protectedProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ input }) => {
+      return ProfileService.getProfileById(input.userId);
+    }),
+
   updateProfile: protectedProcedure
     .input(z.object({
       displayName: z.string().min(1).max(50).optional(),

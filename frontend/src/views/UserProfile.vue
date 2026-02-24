@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <Header title="Профиль" back @back="$router.back()" />
-    <ion-content class="ion-padding" color="light">
+    <ion-content class="ion-padding">
       <div v-if="user" class="profile-container">
         
         <Card class="profile-card">
@@ -57,6 +57,7 @@ import Header from '@/components/ui/Header.vue';
 import Card from '@/components/ui/Card.vue';
 import Button from '@/components/ui/Button.vue';
 import Avatar from '@/components/ui/Avatar.vue';
+import { trpc } from '@/api';
 import { useSearchStore } from '@/stores/search';
 import { useDialogsStore } from '@/stores/dialogs';
 import type { UserSearchResultLocal } from '@/api/types';
@@ -75,18 +76,22 @@ const chatLoading = ref(false);
 const blockLoading = ref(false);
 
 onMounted(async () => {
-  // First, try to find user in existing search results to avoid extra query
+  // First, try to find user in existing search/suggestion lists to avoid extra query
   const existingUser = searchStore.searchResults.find(u => u.id === userId);
-  if (existingUser) {
-    user.value = existingUser;
+  const suggestedUser = searchStore.suggestions.find(u => u.id === userId);
+  if (existingUser || suggestedUser) {
+    user.value = existingUser || suggestedUser || null;
     isLoading.value = false;
-  } else {
-    // If not in search results, we would ideally fetch by ID. 
-    // Since MVP only has search.users, let's just show an error or try a generic search if we had the username.
-    // For simplicity in this demo, if they come via direct link and not search, they might see not found.
-    // Realistically backend needs a `profile.getById` or similar for this view, but we stick to MVP trpc spec.
-    isLoading.value = false;
+    return;
+  }
+
+  try {
+    const fetched = await trpc.profile.getById.query({ userId });
+    user.value = { ...fetched, isBlocked: false };
+  } catch {
     toast.error(TOAST_MESSAGES.USER_NOT_LOADED_FOR_PROFILE);
+  } finally {
+    isLoading.value = false;
   }
 });
 

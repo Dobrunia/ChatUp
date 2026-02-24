@@ -30,11 +30,27 @@ const t = initTRPC.context<Context>().create({
   transformer: superjson,
   errorFormatter({ shape, error, ctx, path, type }) {
     // Single place for error formatting & logging
-    logger.error(`[tRPC Error] ${type} ${path}`, error, {
+    const expectedClientErrorCodes = new Set([
+      'BAD_REQUEST',
+      'UNAUTHORIZED',
+      'FORBIDDEN',
+      'NOT_FOUND',
+      'CONFLICT',
+      'PAYLOAD_TOO_LARGE',
+      'TOO_MANY_REQUESTS',
+    ]);
+    const isExpectedClientError = expectedClientErrorCodes.has(error.code);
+    const logPayload = {
+      event: `[tRPC Error] ${type} ${path}`,
       code: error.code,
       message: error.message,
       userId: ctx?.user?.userId,
-    });
+    };
+    if (isExpectedClientError) {
+      logger.warn(logPayload);
+    } else {
+      logger.error(logPayload, error);
+    }
 
     return {
       ...shape,

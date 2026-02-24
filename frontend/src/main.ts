@@ -31,10 +31,10 @@ app.use(IonicVue)
 app.use(pinia)
 app.use(router) // Router must be used after pinia is initialized so guards can use stores
 
-// Connect WS when app loads if we have token
-router.isReady().then(() => {
+async function bootstrapClientApp() {
+  await router.isReady();
   app.mount('#app')
-  
+
   // Watch for auth changes to connect/disconnect WS
   const authStore = pinia.state.value.auth;
   if (authStore?.isAuthenticated) {
@@ -44,11 +44,17 @@ router.isReady().then(() => {
   // Init resilience layer
   import('./services/resilience.service').then(({ resilienceService }) => {
     resilienceService.init();
-    resilienceService.restoreStateOnStart();
+    void resilienceService.restoreStateOnStart().catch((error: unknown) => {
+      if (import.meta.env.DEV) {
+        console.debug('Resilience restore failed', error);
+      }
+    });
   });
 
   // Load settings
   import('./stores/settings').then(({ useSettingsStore }) => {
     useSettingsStore().loadSettings();
   });
-})
+}
+
+void bootstrapClientApp();

@@ -17,7 +17,7 @@
       </template>
     </Header>
     
-    <ion-content class="ion-padding" color="light">
+    <ion-content class="ion-padding">
       
       <ion-refresher slot="fixed" @ionRefresh="handleRefresh">
         <ion-refresher-content></ion-refresher-content>

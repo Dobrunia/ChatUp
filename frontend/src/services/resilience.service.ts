@@ -55,9 +55,15 @@ class ResilienceService {
       return this.processingPromise ?? Promise.resolve();
     }
 
-    this.processingPromise = this._processQueue().finally(() => {
-      this.processingPromise = null;
-    });
+    this.processingPromise = this._processQueue()
+      .catch((error: unknown) => {
+        if (import.meta.env.DEV) {
+          console.debug('Outgoing queue processing failed', error);
+        }
+      })
+      .finally(() => {
+        this.processingPromise = null;
+      });
 
     return this.processingPromise;
   }

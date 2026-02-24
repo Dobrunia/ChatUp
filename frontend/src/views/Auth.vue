@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <Header title="Вход или Регистрация" />
-    <ion-content class="ion-padding" color="light">
+    <ion-content class="ion-padding">
       <div class="auth-container">
         
         <!-- Toggle Tabs -->

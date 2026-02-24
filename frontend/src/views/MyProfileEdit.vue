@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <Header title="Мой Профиль" back @back="$router.replace('/settings')" />
-    <ion-content class="ion-padding" color="light">
+    <ion-content class="ion-padding">
       <div v-if="profileStore.profile" class="profile-container">
         
         <Card class="profile-card">
@@ -58,7 +58,8 @@ import Avatar from '@/components/ui/Avatar.vue';
 import { useProfileStore } from '@/stores/profile';
 import { useDebounceFn } from '@vueuse/core';
 import { toast } from 'vue-sonner';
-import { LIMITS, TOAST_MESSAGES, USERNAME_HINT, isRateLimitError, normalizeUsername } from '@chatup/shared/src/protocol';
+import { ERROR_MESSAGES, LIMITS, TOAST_MESSAGES, USERNAME_HINT, isRateLimitError, normalizeUsername } from '@chatup/shared/src/protocol';
+import { extractUserErrorMessage } from '@/utils/errorHandler';
 
 const router = useRouter();
 const profileStore = useProfileStore();
@@ -119,6 +120,10 @@ const handleUpdateProfile = async () => {
   try {
     await profileStore.updateProfile(editForm.displayName);
     toast.success(TOAST_MESSAGES.PROFILE_UPDATED);
+  } catch (error: unknown) {
+    if (import.meta.env.DEV) {
+      console.debug('Profile update failed', error);
+    }
   } finally {
     loading.value = false;
   }
@@ -128,7 +133,17 @@ const handleUpdateUsername = async () => {
   usernameLoading.value = true;
   try {
     await profileStore.updateUsername(usernameForm.username);
+    usernameError.value = '';
     toast.success(TOAST_MESSAGES.USERNAME_UPDATED);
+  } catch (error: unknown) {
+    const message = extractUserErrorMessage(error);
+    if (message === ERROR_MESSAGES.USERNAME_TAKEN) {
+      usernameError.value = ERROR_MESSAGES.USERNAME_TAKEN;
+      return;
+    }
+    if (import.meta.env.DEV) {
+      console.debug('Username update failed', error);
+    }
   } finally {
     usernameLoading.value = false;
   }

@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <Header title="Настройки" back @back="$router.replace('/chats')" />
-    <ion-content class="ion-padding" color="light">
+    <ion-content class="ion-padding">
       <div class="settings-container">
         
         <Card class="settings-card">
@@ -86,13 +86,22 @@ const togglePush = async () => {
     return;
   }
 
-  const granted = await pushService.initPush();
-  if (granted) {
+  const result = await pushService.initPush();
+  if (result.ok) {
     settingsStore.toggleNotifications(true);
     toast.success(TOAST_MESSAGES.PUSH_ENABLED);
-  } else {
-    toast.error(TOAST_MESSAGES.PUSH_PERMISSION_DENIED);
+    return;
   }
+
+  const pushErrorMessageByReason = {
+    insecure_context: TOAST_MESSAGES.PUSH_INSECURE_CONTEXT,
+    unsupported: TOAST_MESSAGES.PUSH_UNSUPPORTED,
+    permission_denied: TOAST_MESSAGES.PUSH_PERMISSION_DENIED,
+    public_key_missing: TOAST_MESSAGES.PUSH_PUBLIC_KEY_MISSING,
+    register_failed: TOAST_MESSAGES.PUSH_INIT_FAILED,
+  } as const;
+
+  toast.error(pushErrorMessageByReason[result.reason] ?? TOAST_MESSAGES.PUSH_INIT_FAILED);
 };
 
 const toggleTheme = () => {
@@ -101,8 +110,14 @@ const toggleTheme = () => {
 };
 
 const handleLogout = async () => {
-  await authStore.logout();
-  router.replace('/welcome');
+  try {
+    await authStore.logout();
+    router.replace('/welcome');
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.debug('Logout failed', error);
+    }
+  }
 };
 </script>
 

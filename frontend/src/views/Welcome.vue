@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-content class="ion-padding" color="light">
+    <ion-content class="ion-padding">
       <div class="welcome-container">
         <h1 class="welcome-title">ChatUp</h1>
         <p class="welcome-subtitle">Общайтесь легко и безопасно</p>

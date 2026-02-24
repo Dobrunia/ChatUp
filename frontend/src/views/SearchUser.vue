@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <Header title="Поиск людей" back @back="$router.replace('/chats')" />
-    <ion-content class="ion-padding" color="light">
+    <ion-content class="ion-padding">
       <div class="search-container">
         
         <Input 

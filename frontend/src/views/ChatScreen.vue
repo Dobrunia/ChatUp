@@ -2,7 +2,7 @@
   <ion-page>
     <Header :title="dialogTitle" back @back="$router.replace('/chats')" />
     
-    <ion-content class="chat-content" color="light">
+    <ion-content class="chat-content">
       <VirtualMessageList 
         :messages="chatStore.messages" 
         :currentUserId="profileStore.profile?.id || ''"
@@ -40,9 +40,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { IonPage, IonContent } from '@ionic/vue';
+import { toast } from 'vue-sonner';
 import Header from '@/components/ui/Header.vue';
 import Input from '@/components/ui/Input.vue';
 import VirtualMessageList from '@/components/VirtualMessageList.vue';
@@ -53,6 +54,7 @@ import { useProfileStore } from '@/stores/profile';
 import { useDialogsStore } from '@/stores/dialogs';
 import { resilienceService } from '@/services/resilience.service';
 import { useMediaStore } from '@/stores/media';
+import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
 
 const route = useRoute();
 const chatStore = useChatStore();
@@ -92,7 +94,15 @@ const sendMessage = async () => {
   
   // Hand off to resilience layer (which will optimistic UI via chatStore)
   // mediaStore.getReadyAttachmentIds() would be passed here, but blocked by constraint
-  await resilienceService.enqueueMessage(dialogId, text, []);
+  try {
+    await resilienceService.enqueueMessage(dialogId, text, []);
+  } catch (error) {
+    messageText.value = text;
+    toast.error(ERROR_MESSAGES.MESSAGE_SEND_FAILED);
+    if (import.meta.env.DEV) {
+      console.debug('sendMessage failed', error);
+    }
+  }
 };
 </script>
 

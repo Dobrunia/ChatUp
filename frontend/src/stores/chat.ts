@@ -7,6 +7,7 @@ export const useChatStore = defineStore('chat', () => {
   const messages = ref<MessageItem[]>([]);
   const currentDialogId = ref<string | null>(null);
   const isLoading = ref(false);
+  const error = ref('');
   const nextCursorId = ref<string | undefined>(undefined);
   const hasMore = ref(true);
 
@@ -23,6 +24,7 @@ export const useChatStore = defineStore('chat', () => {
     if (!currentDialogId.value || isLoading.value || !hasMore.value) return;
     
     isLoading.value = true;
+    error.value = '';
     try {
       const data = await trpc.message.list.query({
         dialogId: currentDialogId.value,
@@ -35,10 +37,12 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       if (data.length > 0) {
-        nextCursorId.value = data[data.length - 1].id;
+        nextCursorId.value = data.at(-1)?.id;
       }
       
       messages.value.push(...data);
+    } catch (err: unknown) {
+      error.value = err instanceof Error ? err.message : 'Ошибка загрузки сообщений';
     } finally {
       isLoading.value = false;
     }
@@ -60,10 +64,10 @@ export const useChatStore = defineStore('chat', () => {
     if (msg.dialogId !== currentDialogId.value) return;
     
     const exists = messages.value.some(m => m.clientMessageId === msg.clientMessageId);
-    if (!exists) {
-      messages.value.unshift(msg);
-    } else {
+    if (exists) {
       updateMessageStatus(msg.clientMessageId, msg);
+    } else {
+      messages.value.unshift(msg);
     }
   };
 
@@ -71,6 +75,7 @@ export const useChatStore = defineStore('chat', () => {
     messages,
     currentDialogId,
     isLoading,
+    error,
     hasMore,
     setDialogId,
     fetchMessages,

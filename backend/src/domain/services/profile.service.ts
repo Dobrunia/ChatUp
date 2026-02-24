@@ -14,6 +14,17 @@ export class ProfileService {
     return user;
   }
 
+  static async getProfileById(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, displayName: true, avatarUrl: true },
+    });
+    if (!user) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: ERROR_MESSAGES.USER_NOT_FOUND });
+    }
+    return user;
+  }
+
   static async updateProfile(userId: string, data: { displayName?: string; avatarUrl?: string }) {
     const user = await prisma.user.update({
       where: { id: userId },
