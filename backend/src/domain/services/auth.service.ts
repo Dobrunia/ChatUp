@@ -11,6 +11,16 @@ function isDbConnectivityError(error: unknown): boolean {
   return ['P1001', 'P1002', 'P1008', 'P1017'].includes(error.code);
 }
 
+function isRefreshTokenTooLongError(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  if (error.code !== 'P2000') return false;
+  const meta = error.meta as { column_name?: string; target?: string | string[] } | undefined;
+  const target = Array.isArray(meta?.target) ? meta?.target.join('.') : meta?.target;
+  const columnName = meta?.column_name || '';
+  const source = `${target || ''} ${columnName}`.toLowerCase();
+  return source.includes('refreshtoken') || source.includes('token');
+}
+
 export class AuthService {
   static async signup(data: { displayName: string; username: string; passwordHash: string }) {
     const { displayName, username, passwordHash } = data;
@@ -44,6 +54,9 @@ export class AuthService {
           throw new TRPCError({ code: 'CONFLICT', message: ERROR_MESSAGES.USERNAME_TAKEN });
         }
         if (error.code === 'P2000') {
+          if (isRefreshTokenTooLongError(error)) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: ERROR_MESSAGES.AUTH_SESSION_PERSIST_FAILED });
+          }
           throw new TRPCError({ code: 'BAD_REQUEST', message: ERROR_MESSAGES.FIELD_VALUE_TOO_LONG });
         }
       }

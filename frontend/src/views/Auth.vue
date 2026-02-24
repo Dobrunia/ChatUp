@@ -62,11 +62,22 @@
               label="Уникальный логин" 
               placeholder="@ivan"
               :hint="USERNAME_HINT"
-              :error="usernameError"
+              :error="signupUsernameError"
               @update:modelValue="onUsernameInput(signupForm, 'username', $event)"
               @blur="checkUsernameAvailability"
               :disabled="loading"
             />
+            <div class="username-checklist">
+              <div class="check-item" :class="{ valid: !signupUsernameInvalidChars && signupUsernameTouched }">
+                Только строчные латинские буквы (a-z)
+              </div>
+              <div
+                class="check-item"
+                :class="{ valid: signupForm.username.length >= LIMITS.USERNAME_MIN_LENGTH && signupForm.username.length <= LIMITS.USERNAME_MAX_LENGTH }"
+              >
+                Длина: {{ LIMITS.USERNAME_MIN_LENGTH }}-{{ LIMITS.USERNAME_MAX_LENGTH }} символов
+              </div>
+            </div>
             <Input 
               v-model="signupForm.password" 
               type="password" 
@@ -112,8 +123,11 @@ import {
   LIMITS,
   PASSWORD_HINT,
   TOAST_MESSAGES,
+  USERNAME_CHARS_ONLY_MESSAGE,
   USERNAME_HINT,
+  USERNAME_VALIDATION_MESSAGE,
   isRateLimitError,
+  isValidUsername,
   isValidPasswordLength,
   normalizeUsername,
 } from '@chatup/shared/src/protocol';
@@ -137,15 +151,36 @@ const signupForm = reactive({
 });
 
 const usernameError = ref('');
+const signupUsernameTouched = ref(false);
+const signupUsernameInvalidChars = ref(false);
 
 const onUsernameInput = (form: Record<string, string>, key: string, val: unknown) => {
-  form[key] = normalizeUsername(val);
-  usernameError.value = '';
+  const raw = typeof val === 'string' ? val : '';
+  form[key] = normalizeUsername(raw);
+
+  if (form === signupForm && key === 'username') {
+    signupUsernameTouched.value = true;
+    const usernameRawWithoutAt = raw.replace(/^@+/, '').toLowerCase();
+    signupUsernameInvalidChars.value = /[^a-z]/.test(usernameRawWithoutAt);
+    usernameError.value = '';
+  }
 };
+
+const signupUsernameValidationError = computed(() => {
+  if (!signupUsernameTouched.value) return '';
+  if (signupUsernameInvalidChars.value) return USERNAME_CHARS_ONLY_MESSAGE;
+  if (!isValidUsername(signupForm.username)) return USERNAME_VALIDATION_MESSAGE;
+  return '';
+});
+
+const signupUsernameError = computed(() => {
+  return signupUsernameValidationError.value || usernameError.value;
+});
 
 const checkUsernameAvailability = useDebounceFn(async () => {
   if (mode.value !== 'signup') return;
   if (signupForm.username.length < LIMITS.USERNAME_MIN_LENGTH) return;
+  if (signupUsernameValidationError.value) return;
   
   try {
     const res = await authStore.checkUsernameAvailability(signupForm.username);
@@ -175,7 +210,7 @@ const isLoginValid = computed(() => {
 const isSignupValid = computed(() => {
   return signupForm.displayName.trim().length > 0 && 
          signupForm.username.length >= LIMITS.USERNAME_MIN_LENGTH && 
-         !usernameError.value &&
+         !signupUsernameError.value &&
          isValidPasswordLength(signupForm.password) && 
          signupForm.passwordConfirm.length > 0 &&
          !passwordMatchError.value;
@@ -247,5 +282,22 @@ const handleSignup = async () => {
 
 .auth-actions {
   margin-top: var(--ru-spacing-8);
+}
+
+.username-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ru-spacing-4);
+  margin-top: calc(var(--ru-spacing-16) * -1);
+}
+
+.check-item {
+  font-family: var(--ru-font-family);
+  font-size: var(--ru-text-xs);
+  color: var(--ru-color-semantic-error);
+}
+
+.check-item.valid {
+  color: var(--ru-color-semantic-success);
 }
 </style>

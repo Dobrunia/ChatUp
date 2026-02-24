@@ -28,6 +28,7 @@ export const LIMITS = {
 export const USERNAME_VALIDATION_MESSAGE = `Логин должен содержать только строчные латинские буквы и быть длиной ${LIMITS.USERNAME_MIN_LENGTH}-${LIMITS.USERNAME_MAX_LENGTH} символов`;
 export const USERNAME_HINT = `Логин: только a-z, длина ${LIMITS.USERNAME_MIN_LENGTH}-${LIMITS.USERNAME_MAX_LENGTH} символов`;
 export const PASSWORD_HINT = `Пароль: минимум ${LIMITS.PASSWORD_MIN_LENGTH} символов`;
+export const USERNAME_CHARS_ONLY_MESSAGE = 'Допустимы только строчные латинские буквы a-z';
 
 export const ERROR_MESSAGES = {
   AUTH_REQUIRED: 'Требуется авторизация',
@@ -50,6 +51,7 @@ export const ERROR_MESSAGES = {
   VIDEO_TOO_LARGE: 'Видео слишком большое',
   FILE_TOO_LARGE: 'Файл слишком большой',
   DB_UNAVAILABLE: 'Сервис базы данных временно недоступен',
+  AUTH_SESSION_PERSIST_FAILED: 'Не удалось сохранить сессию. Попробуйте ещё раз',
   SIGNUP_FAILED: 'Не удалось зарегистрироваться. Попробуйте ещё раз',
   LOGIN_FAILED: 'Не удалось выполнить вход. Попробуйте ещё раз',
   USERNAME_UPDATE_FAILED: 'Не удалось обновить логин. Попробуйте ещё раз',
