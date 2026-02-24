@@ -1,14 +1,14 @@
 import WebSocket, { WebSocketServer } from 'ws';
 import { verifyAccessToken } from '../auth/jwt';
 import { WS_EVENTS } from '@chatup/shared/src/protocol';
-import { IncomingMessage } from 'http';
+import { IncomingMessage, Server as HttpServer } from 'http';
 
 export class WsGateway {
   private wss: WebSocketServer;
   // Map userId to set of active connections
   private connections = new Map<string, Set<WebSocket>>();
 
-  constructor(server: any) {
+  constructor(server: HttpServer) {
     this.wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
 
     this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
@@ -62,7 +62,7 @@ export class WsGateway {
     }
   }
 
-  public emitToUser(userId: string, event: string, payload: any) {
+  public emitToUser(userId: string, event: string, payload: unknown) {
     const userConnections = this.connections.get(userId);
     if (userConnections) {
       const data = JSON.stringify({ type: event, data: payload });
@@ -78,7 +78,7 @@ export class WsGateway {
     }
   }
 
-  public emitToUsers(userIds: string[], event: string, payload: any) {
+  public emitToUsers(userIds: string[], event: string, payload: unknown) {
     for (const userId of userIds) {
       this.emitToUser(userId, event, payload);
     }
@@ -87,6 +87,6 @@ export class WsGateway {
 
 export let wsGateway: WsGateway;
 
-export function initWsGateway(server: any) {
+export function initWsGateway(server: HttpServer) {
   wsGateway = new WsGateway(server);
 }

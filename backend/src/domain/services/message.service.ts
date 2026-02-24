@@ -31,7 +31,6 @@ export class MessageService {
 
       // Notify other members
       const members = await prisma.dialogMember.findMany({ where: { dialogId: data.dialogId } });
-      const otherUserIds = members.filter(m => m.userId !== data.senderId).map(m => m.userId);
 
       // We should deliver 'message.new' to all members including sender (for other devices),
       // but sender's current device can ignore it by clientMessageId.

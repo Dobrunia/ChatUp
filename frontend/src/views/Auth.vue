@@ -28,7 +28,8 @@
             <Input 
               v-model="loginForm.username" 
               label="Логин (username)" 
-              placeholder="example" 
+              placeholder="ivan"
+              hint="Логин: только a-z, длина 3-20 символов"
               @input="onUsernameInput(loginForm, 'username', $event)"
               :disabled="loading"
             />
@@ -37,6 +38,7 @@
               type="password" 
               label="Пароль" 
               placeholder="******" 
+              hint="Пароль: минимум 8 символов"
               :disabled="loading"
             />
             
@@ -58,8 +60,8 @@
             <Input 
               v-model="signupForm.username" 
               label="Уникальный логин" 
-              placeholder="ivan123" 
-              hint="Только a-z (минимум 3 символа)"
+              placeholder="ivan"
+              hint="Логин: только a-z, длина 3-20 символов"
               :error="usernameError"
               @input="onUsernameInput(signupForm, 'username', $event)"
               @blur="checkUsernameAvailability"
@@ -70,7 +72,7 @@
               type="password" 
               label="Пароль" 
               placeholder="******" 
-              hint="Минимум 6 символов"
+              hint="Пароль: минимум 8 символов"
               :disabled="loading"
             />
             <Input 
@@ -158,14 +160,14 @@ const passwordMatchError = computed(() => {
 });
 
 const isLoginValid = computed(() => {
-  return loginForm.username.length >= 3 && loginForm.password.length >= 6;
+  return loginForm.username.length >= 3 && loginForm.password.length >= 8;
 });
 
 const isSignupValid = computed(() => {
   return signupForm.displayName.trim().length > 0 && 
          signupForm.username.length >= 3 && 
          !usernameError.value &&
-         signupForm.password.length >= 6 && 
+         signupForm.password.length >= 8 && 
          !passwordMatchError.value;
 });
 

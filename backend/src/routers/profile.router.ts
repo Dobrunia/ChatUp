@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { ProfileService } from '../domain/services/profile.service';
 import { rateLimit } from '../middlewares/rateLimit';
+import { RATE_LIMITS } from '../config/constants';
 
 const usernameRegex = /^[a-z]{3,20}$/;
 
@@ -25,7 +26,7 @@ export const profileRouter = router({
       username: z.string().trim().toLowerCase()
     }))
     .mutation(async ({ input, ctx }) => {
-      rateLimit(`updateUsername:${ctx.user.userId}`, 5, 60 * 60 * 1000); // 5 times per hour
+      rateLimit(`updateUsername:${ctx.user.userId}`, RATE_LIMITS.UPDATE_USERNAME.limit, RATE_LIMITS.UPDATE_USERNAME.windowMs);
       
       if (!usernameRegex.test(input.username)) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Username must be 3-20 lowercase english letters' });

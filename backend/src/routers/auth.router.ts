@@ -4,6 +4,7 @@ import { z } from 'zod';
 import argon2 from 'argon2';
 import { AuthService } from '../domain/services/auth.service';
 import { rateLimit } from '../middlewares/rateLimit';
+import { RATE_LIMITS } from '../config/constants';
 
 function getIp(req: any): string {
   const forwarded = req.headers['x-forwarded-for'];
@@ -28,7 +29,7 @@ export const authRouter = router({
       path: ["passwordConfirm"]
     }))
     .mutation(async ({ input, ctx }) => {
-      rateLimit(`signup:${getIp(ctx.req)}`, 5, 15 * 60 * 1000); // 5 per 15 minutes
+      rateLimit(`signup:${getIp(ctx.req)}`, RATE_LIMITS.SIGNUP.limit, RATE_LIMITS.SIGNUP.windowMs);
 
       if (!usernameRegex.test(input.username)) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Username must be 3-20 lowercase english letters' });
@@ -48,7 +49,7 @@ export const authRouter = router({
       password: z.string()
     }))
     .mutation(async ({ input, ctx }) => {
-      rateLimit(`login:${input.username}:${getIp(ctx.req)}`, 10, 15 * 60 * 1000); // 10 per 15 minutes
+      rateLimit(`login:${input.username}:${getIp(ctx.req)}`, RATE_LIMITS.LOGIN.limit, RATE_LIMITS.LOGIN.windowMs);
 
       return AuthService.login(input.username, input.password);
     }),
@@ -65,7 +66,7 @@ export const authRouter = router({
       username: z.string().trim().toLowerCase()
     }))
     .query(async ({ input, ctx }) => {
-      rateLimit(`checkUsername:${getIp(ctx.req)}`, 20, 60 * 1000); // 20 per minute
+      rateLimit(`checkUsername:${getIp(ctx.req)}`, RATE_LIMITS.CHECK_USERNAME.limit, RATE_LIMITS.CHECK_USERNAME.windowMs);
       
       if (!usernameRegex.test(input.username)) {
         return { available: false, reason: 'Invalid format' };

@@ -13,11 +13,19 @@ function getEnv(key: keyof ImportMetaEnv, fallback?: string): string {
   return value;
 }
 
+function getOptionalEnv(key: keyof ImportMetaEnv): string | undefined {
+  const value = import.meta.env[key];
+  return value && value.trim().length > 0 ? value : undefined;
+}
+
 export const config = {
   api: {
     url: getEnv('VITE_API_URL', 'http://localhost:3000/trpc'),
   },
   ws: {
     url: getEnv('VITE_WS_URL', 'ws://localhost:3000'),
+  },
+  webPush: {
+    publicKey: getOptionalEnv('VITE_WEB_PUSH_PUBLIC_KEY'),
   }
 };

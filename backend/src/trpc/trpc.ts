@@ -11,8 +11,12 @@ export const createContext = ({ req, res }: CreateExpressContextOptions) => {
   if (token) {
     try {
       user = verifyAccessToken(token);
-    } catch (e) {
-      // invalid token
+    } catch (e: unknown) {
+      logger.warn({
+        event: 'Invalid access token in context',
+        reason: e instanceof Error ? e.message : 'unknown_error',
+        ip: req.socket?.remoteAddress || 'unknown',
+      });
     }
   }
 
