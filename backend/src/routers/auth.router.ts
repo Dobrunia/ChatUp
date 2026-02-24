@@ -66,6 +66,12 @@ export const authRouter = router({
       return { success: true };
     }),
 
+  refresh: publicProcedure
+    .input(z.object({ refreshToken: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      return AuthService.refreshAccessToken(input.refreshToken);
+    }),
+
   checkUsername: publicProcedure
     .input(z.object({
       username: z.string().transform(normalizeUsername)

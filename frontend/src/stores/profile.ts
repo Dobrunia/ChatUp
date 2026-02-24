@@ -12,6 +12,8 @@ export const useProfileStore = defineStore('profile', () => {
     try {
       const data = await trpc.profile.me.query();
       profile.value = data;
+    } catch {
+      profile.value = null;
     } finally {
       isLoading.value = false;
     }

@@ -5,12 +5,19 @@ import type { UserSearchResultLocal } from '../api/types';
 
 export const useSearchStore = defineStore('search', () => {
   const searchResults = ref<UserSearchResultLocal[]>([]);
+  const suggestions = ref<UserSearchResultLocal[]>([]);
+  const isLoadingSuggestions = ref(false);
   const isSearching = ref(false);
+  const hasSearched = ref(false);
   const searchError = ref('');
 
-  const searchUsers = async (query: string) => {
-    if (!query || query.length < 3) {
+  const searchUsers = async (rawQuery: string) => {
+    const trimmed = rawQuery.trim();
+    const usernameOnly = trimmed.startsWith('@');
+    const query = usernameOnly ? trimmed.replace(/^@+/, '') : trimmed;
+    if (!query || query.length < 1) {
       searchResults.value = [];
+      hasSearched.value = false;
       return;
     }
 
@@ -18,13 +25,27 @@ export const useSearchStore = defineStore('search', () => {
     searchError.value = '';
     
     try {
-      const data = await trpc.search.users.query({ query });
+      const data = await trpc.search.users.query({ query, usernameOnly });
       searchResults.value = data.map(u => ({ ...u, isBlocked: false }));
+      hasSearched.value = true;
     } catch (err: unknown) {
       searchError.value = err instanceof Error ? err.message : 'Ошибка поиска';
       searchResults.value = [];
+      hasSearched.value = true;
     } finally {
       isSearching.value = false;
+    }
+  };
+
+  const loadSuggestions = async () => {
+    isLoadingSuggestions.value = true;
+    try {
+      const data = await trpc.search.suggestions.query({ limit: 2 });
+      suggestions.value = data.map(u => ({ ...u, isBlocked: false }));
+    } catch {
+      suggestions.value = [];
+    } finally {
+      isLoadingSuggestions.value = false;
     }
   };
 
@@ -47,13 +68,18 @@ export const useSearchStore = defineStore('search', () => {
   const clearSearch = () => {
     searchResults.value = [];
     searchError.value = '';
+    hasSearched.value = false;
   };
 
   return {
     searchResults,
+    suggestions,
+    isLoadingSuggestions,
     isSearching,
+    hasSearched,
     searchError,
     searchUsers,
+    loadSuggestions,
     blockUser,
     unblockUser,
     clearSearch

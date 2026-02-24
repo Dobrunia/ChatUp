@@ -20,3 +20,7 @@ export function signRefreshToken(payload: JwtPayload): string {
 export function verifyAccessToken(token: string): JwtPayload {
   return jwt.verify(token, config.jwt.accessSecret) as JwtPayload;
 }
+
+export function verifyRefreshToken(token: string): JwtPayload {
+  return jwt.verify(token, config.jwt.refreshSecret) as JwtPayload;
+}

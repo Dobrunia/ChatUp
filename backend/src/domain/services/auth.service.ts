@@ -2,7 +2,7 @@ import argon2 from 'argon2';
 import { Prisma } from '@prisma/client';
 import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
 import { prisma } from '../../db/prisma';
-import { signAccessToken, signRefreshToken } from '../../auth/jwt';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../auth/jwt';
 import { TRPCError } from '@trpc/server';
 import { logger } from '../../utils/logger';
 
@@ -117,5 +117,29 @@ export class AuthService {
   static async checkUsername(username: string): Promise<boolean> {
     const user = await prisma.user.findUnique({ where: { username } });
     return !user;
+  }
+
+  static async refreshAccessToken(refreshTokenStr: string) {
+    try {
+      const payload = verifyRefreshToken(refreshTokenStr);
+      const tokenRecord = await prisma.refreshToken.findUnique({
+        where: { token: refreshTokenStr },
+      });
+
+      if (!tokenRecord?.userId || tokenRecord.userId !== payload.userId) {
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: ERROR_MESSAGES.AUTH_REQUIRED });
+      }
+
+      if (tokenRecord.expiresAt < new Date()) {
+        await prisma.refreshToken.deleteMany({ where: { token: refreshTokenStr } });
+        throw new TRPCError({ code: 'UNAUTHORIZED', message: ERROR_MESSAGES.AUTH_REQUIRED });
+      }
+
+      const accessToken = signAccessToken({ userId: payload.userId });
+      return { accessToken };
+    } catch (error: unknown) {
+      if (error instanceof TRPCError) throw error;
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: ERROR_MESSAGES.AUTH_REQUIRED });
+    }
   }
 }
