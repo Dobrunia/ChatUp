@@ -5,24 +5,28 @@ import argon2 from 'argon2';
 import { AuthService } from '../domain/services/auth.service';
 import { rateLimit } from '../middlewares/rateLimit';
 import { RATE_LIMITS } from '../config/constants';
+import {
+  LIMITS,
+  USERNAME_VALIDATION_MESSAGE,
+  isValidUsername,
+  normalizeUsername,
+} from '@chatup/shared/src/protocol';
 
 function getIp(req: any): string {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string') {
     const parts = forwarded.split(',');
-    return parts[parts.length - 1].trim();
+    return parts.at(-1)?.trim() || 'unknown';
   }
   return req.socket?.remoteAddress || 'unknown';
 }
-
-const usernameRegex = /^[a-z]{3,20}$/;
 
 export const authRouter = router({
   signup: publicProcedure
     .input(z.object({
       displayName: z.string().min(1).max(50),
-      username: z.string().trim().toLowerCase(),
-      password: z.string().min(8),
+      username: z.string().transform(normalizeUsername),
+      password: z.string().min(LIMITS.PASSWORD_MIN_LENGTH),
       passwordConfirm: z.string()
     }).refine(data => data.password === data.passwordConfirm, {
       message: "Passwords don't match",
@@ -31,8 +35,8 @@ export const authRouter = router({
     .mutation(async ({ input, ctx }) => {
       rateLimit(`signup:${getIp(ctx.req)}`, RATE_LIMITS.SIGNUP.limit, RATE_LIMITS.SIGNUP.windowMs);
 
-      if (!usernameRegex.test(input.username)) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Username must be 3-20 lowercase english letters' });
+      if (!isValidUsername(input.username)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: USERNAME_VALIDATION_MESSAGE });
       }
 
       const passwordHash = await argon2.hash(input.password);
@@ -45,7 +49,7 @@ export const authRouter = router({
 
   login: publicProcedure
     .input(z.object({
-      username: z.string().trim().toLowerCase(),
+      username: z.string().transform(normalizeUsername),
       password: z.string()
     }))
     .mutation(async ({ input, ctx }) => {
@@ -63,12 +67,12 @@ export const authRouter = router({
 
   checkUsername: publicProcedure
     .input(z.object({
-      username: z.string().trim().toLowerCase()
+      username: z.string().transform(normalizeUsername)
     }))
     .query(async ({ input, ctx }) => {
       rateLimit(`checkUsername:${getIp(ctx.req)}`, RATE_LIMITS.CHECK_USERNAME.limit, RATE_LIMITS.CHECK_USERNAME.windowMs);
       
-      if (!usernameRegex.test(input.username)) {
+      if (!isValidUsername(input.username)) {
         return { available: false, reason: 'Invalid format' };
       }
       const available = await AuthService.checkUsername(input.username);

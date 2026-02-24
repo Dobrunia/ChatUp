@@ -27,9 +27,9 @@
             <Input 
               v-model="usernameForm.username" 
               label="Уникальный логин" 
-              hint="Только a-z (минимум 3 символа)"
+              :hint="USERNAME_HINT"
               :error="usernameError"
-              @input="onUsernameInput"
+              @update:modelValue="onUsernameInput"
               @blur="checkUsernameAvailability"
               :disabled="usernameLoading"
             />
@@ -58,6 +58,7 @@ import Avatar from '@/components/ui/Avatar.vue';
 import { useProfileStore } from '@/stores/profile';
 import { useDebounceFn } from '@vueuse/core';
 import { toast } from 'vue-sonner';
+import { LIMITS, USERNAME_HINT, isRateLimitError, normalizeUsername } from '@chatup/shared/src/protocol';
 
 const router = useRouter();
 const profileStore = useProfileStore();
@@ -88,11 +89,11 @@ const hasProfileChanges = computed(() => {
 });
 
 const hasUsernameChanges = computed(() => {
-  return profileStore.profile && usernameForm.username !== profileStore.profile.username && usernameForm.username.length >= 3;
+  return profileStore.profile && usernameForm.username !== profileStore.profile.username && usernameForm.username.length >= LIMITS.USERNAME_MIN_LENGTH;
 });
 
-const onUsernameInput = (val: string) => {
-  usernameForm.username = val.toLowerCase().replace(/[^a-z]/g, '');
+const onUsernameInput = (val: unknown) => {
+  usernameForm.username = normalizeUsername(val);
   usernameError.value = '';
 };
 
@@ -101,13 +102,13 @@ const checkUsernameAvailability = useDebounceFn(async () => {
   
   try {
     const res = await profileStore.checkUsernameAvailability(usernameForm.username);
-    if (!res.available) {
-      usernameError.value = 'Логин уже занят';
-    } else {
+    if (res.available) {
       usernameError.value = '';
+    } else {
+      usernameError.value = 'Логин уже занят';
     }
   } catch (err: unknown) {
-    if ((err as { data?: { httpStatus?: number } })?.data?.httpStatus === 429) {
+    if (isRateLimitError(err)) {
       toast.warning('Слишком частые проверки. Подождите немного.');
     }
   }

@@ -28,9 +28,9 @@
             <Input 
               v-model="loginForm.username" 
               label="Логин (username)" 
-              placeholder="ivan"
-              hint="Логин: только a-z, длина 3-20 символов"
-              @input="onUsernameInput(loginForm, 'username', $event)"
+              placeholder="@ivan"
+              :hint="USERNAME_HINT"
+              @update:modelValue="onUsernameInput(loginForm, 'username', $event)"
               :disabled="loading"
             />
             <Input 
@@ -38,7 +38,7 @@
               type="password" 
               label="Пароль" 
               placeholder="******" 
-              hint="Пароль: минимум 8 символов"
+              :hint="PASSWORD_HINT"
               :disabled="loading"
             />
             
@@ -60,10 +60,10 @@
             <Input 
               v-model="signupForm.username" 
               label="Уникальный логин" 
-              placeholder="ivan"
-              hint="Логин: только a-z, длина 3-20 символов"
+              placeholder="@ivan"
+              :hint="USERNAME_HINT"
               :error="usernameError"
-              @input="onUsernameInput(signupForm, 'username', $event)"
+              @update:modelValue="onUsernameInput(signupForm, 'username', $event)"
               @blur="checkUsernameAvailability"
               :disabled="loading"
             />
@@ -72,7 +72,7 @@
               type="password" 
               label="Пароль" 
               placeholder="******" 
-              hint="Пароль: минимум 8 символов"
+              :hint="PASSWORD_HINT"
               :disabled="loading"
             />
             <Input 
@@ -108,6 +108,14 @@ import Button from '@/components/ui/Button.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useDebounceFn } from '@vueuse/core';
 import { toast } from 'vue-sonner';
+import {
+  LIMITS,
+  PASSWORD_HINT,
+  USERNAME_HINT,
+  isRateLimitError,
+  isValidPasswordLength,
+  normalizeUsername,
+} from '@chatup/shared/src/protocol';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -129,24 +137,24 @@ const signupForm = reactive({
 
 const usernameError = ref('');
 
-const onUsernameInput = (form: Record<string, string>, key: string, val: string) => {
-  form[key] = val.toLowerCase().replace(/[^a-z]/g, '');
+const onUsernameInput = (form: Record<string, string>, key: string, val: unknown) => {
+  form[key] = normalizeUsername(val);
   usernameError.value = '';
 };
 
 const checkUsernameAvailability = useDebounceFn(async () => {
   if (mode.value !== 'signup') return;
-  if (signupForm.username.length < 3) return;
+  if (signupForm.username.length < LIMITS.USERNAME_MIN_LENGTH) return;
   
   try {
     const res = await authStore.checkUsernameAvailability(signupForm.username);
-    if (!res.available) {
-      usernameError.value = 'Логин уже занят';
-    } else {
+    if (res.available) {
       usernameError.value = '';
+    } else {
+      usernameError.value = 'Логин уже занят';
     }
   } catch (err: unknown) {
-    if ((err as { data?: { httpStatus?: number } })?.data?.httpStatus === 429) {
+    if (isRateLimitError(err)) {
       toast.warning('Слишком частые проверки. Подождите немного.');
     }
   }
@@ -160,14 +168,14 @@ const passwordMatchError = computed(() => {
 });
 
 const isLoginValid = computed(() => {
-  return loginForm.username.length >= 3 && loginForm.password.length >= 8;
+  return loginForm.username.length >= LIMITS.USERNAME_MIN_LENGTH && isValidPasswordLength(loginForm.password);
 });
 
 const isSignupValid = computed(() => {
   return signupForm.displayName.trim().length > 0 && 
-         signupForm.username.length >= 3 && 
+         signupForm.username.length >= LIMITS.USERNAME_MIN_LENGTH && 
          !usernameError.value &&
-         signupForm.password.length >= 8 && 
+         isValidPasswordLength(signupForm.password) && 
          !passwordMatchError.value;
 });
 

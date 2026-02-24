@@ -4,8 +4,7 @@ import { z } from 'zod';
 import { ProfileService } from '../domain/services/profile.service';
 import { rateLimit } from '../middlewares/rateLimit';
 import { RATE_LIMITS } from '../config/constants';
-
-const usernameRegex = /^[a-z]{3,20}$/;
+import { USERNAME_VALIDATION_MESSAGE, isValidUsername, normalizeUsername } from '@chatup/shared/src/protocol';
 
 export const profileRouter = router({
   me: protectedProcedure.query(async ({ ctx }) => {
@@ -23,13 +22,13 @@ export const profileRouter = router({
 
   updateUsername: protectedProcedure
     .input(z.object({
-      username: z.string().trim().toLowerCase()
+      username: z.string().transform(normalizeUsername)
     }))
     .mutation(async ({ input, ctx }) => {
       rateLimit(`updateUsername:${ctx.user.userId}`, RATE_LIMITS.UPDATE_USERNAME.limit, RATE_LIMITS.UPDATE_USERNAME.windowMs);
       
-      if (!usernameRegex.test(input.username)) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Username must be 3-20 lowercase english letters' });
+      if (!isValidUsername(input.username)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: USERNAME_VALIDATION_MESSAGE });
       }
 
       return ProfileService.updateUsername(ctx.user.userId, input.username);

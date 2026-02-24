@@ -21,6 +21,7 @@
 import { ref } from 'vue';
 import { useMediaStore } from '@/stores/media';
 import { toast } from 'vue-sonner';
+import { LIMITS } from '@chatup/shared/src/protocol';
 
 defineProps<{
   disabled?: boolean;
@@ -37,16 +38,22 @@ const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (!target.files?.length) return;
   
-  // Basic validation, e.g., max 5 files, 10MB each
+  // Basic validation
   if (target.files.length > 5) {
     toast.error('Максимум 5 файлов за раз');
     return;
   }
 
-  for (let i = 0; i < target.files.length; i++) {
-    const file = target.files[i];
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error(`Файл ${file.name} слишком большой (> 10MB)`);
+  for (const file of Array.from(target.files)) {
+    const sizeMb = file.size / (1024 * 1024);
+    let maxMb: number = LIMITS.FILE_MAX_SIZE_MB;
+    if (file.type.startsWith('image/')) {
+      maxMb = LIMITS.IMAGE_MAX_SIZE_MB;
+    } else if (file.type.startsWith('video/')) {
+      maxMb = LIMITS.VIDEO_MAX_SIZE_MB;
+    }
+    if (sizeMb > maxMb) {
+      toast.error(`Файл ${file.name} слишком большой (> ${maxMb}MB)`);
       continue;
     }
     mediaStore.addDraft(file);
