@@ -18,5 +18,10 @@ export const defaults = {
     secretAccessKey: 'dev-secret',
     bucket: 'chatup-dev-bucket',
     region: 'ru-central1',
+  },
+  webPush: {
+    publicKey: '',
+    privateKey: '',
+    subject: 'mailto:dev@chatup.local',
   }
 };

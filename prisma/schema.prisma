@@ -21,6 +21,7 @@ model User {
   receipts       Receipt[]
   attachments    Attachment[]
   refreshTokens  RefreshToken[]
+  webPushSubscriptions WebPushSubscription[]
   blocksIssued   Block[] @relation("Blocker")
   blocksReceived Block[] @relation("Blocked")
 }
@@ -124,4 +125,18 @@ model Block {
   blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
 
   @@id([blockerId, blockedId])
+}
+
+model WebPushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

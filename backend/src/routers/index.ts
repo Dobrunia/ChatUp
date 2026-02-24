@@ -5,6 +5,7 @@ import { dialogRouter } from './dialog.router';
 import { searchRouter } from './search.router';
 import { messageRouter } from './message.router';
 import { mediaRouter } from './media.router';
+import { pushRouter } from './push.router';
 
 export const appRouter = router({
   auth: authRouter,
@@ -13,6 +14,7 @@ export const appRouter = router({
   search: searchRouter,
   message: messageRouter,
   media: mediaRouter,
+  push: pushRouter,
 });
 
 export type AppRouter = typeof appRouter;

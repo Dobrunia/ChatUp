@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 import { DialogService } from './dialog.service';
 import { wsGateway } from '../../ws/gateway';
 import { WS_EVENTS } from '@chatup/shared/src/protocol';
+import { PushService } from './push.service';
 
 export class MessageService {
   static async sendMessage(data: {
@@ -31,10 +32,16 @@ export class MessageService {
 
       // Notify other members
       const members = await prisma.dialogMember.findMany({ where: { dialogId: data.dialogId } });
+      const recipientUserIds = members.filter(m => m.userId !== data.senderId).map(m => m.userId);
 
       // We should deliver 'message.new' to all members including sender (for other devices),
       // but sender's current device can ignore it by clientMessageId.
       wsGateway?.emitToUsers(members.map(m => m.userId), WS_EVENTS.SERVER.NEW_MESSAGE, message);
+      await PushService.notifyUsersNewMessage(recipientUserIds, {
+        title: 'Новое сообщение',
+        body: message.content || 'Вам отправили вложение',
+        dialogId: data.dialogId,
+      });
 
       // On per-user message.new delivery, we could auto-create Receipt.deliveredAt if done via WS ACK,
       // but typically we let the client send a 'delivered' status back. 

@@ -17,6 +17,13 @@ function getEnv(key: string, fallback?: string): string {
   return value;
 }
 
+function getOptionalEnv(key: string, fallback = ''): string {
+  const value = process.env[key];
+  if (value !== undefined) return value;
+  if (isDev) return fallback;
+  return '';
+}
+
 /** Secrets: fallback allowed ONLY in development; production throws immediately */
 function getSecretEnv(key: string, devFallback: string): string {
   const value = process.env[key];
@@ -46,5 +53,10 @@ export const config = {
     secretAccessKey: getSecretEnv('S3_SECRET_ACCESS_KEY', defaults.s3.secretAccessKey),
     bucket: getEnv('S3_BUCKET', defaults.s3.bucket),
     region: getEnv('S3_REGION', defaults.s3.region),
+  },
+  webPush: {
+    publicKey: getOptionalEnv('WEB_PUSH_PUBLIC_KEY', defaults.webPush.publicKey),
+    privateKey: getOptionalEnv('WEB_PUSH_PRIVATE_KEY', defaults.webPush.privateKey),
+    subject: getOptionalEnv('WEB_PUSH_SUBJECT', defaults.webPush.subject),
   }
 };

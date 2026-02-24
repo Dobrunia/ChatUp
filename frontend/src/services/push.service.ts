@@ -1,6 +1,7 @@
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { config } from '../config';
+import { trpc } from '../api';
 
 export class PushService {
   private base64UrlToUint8Array(base64Url: string): Uint8Array {
@@ -28,11 +29,25 @@ export class PushService {
 
     if (config.webPush.publicKey) {
       const existing = await registration.pushManager.getSubscription();
-      if (!existing) {
-        await registration.pushManager.subscribe({
+      let subscription = existing;
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: this.base64UrlToUint8Array(config.webPush.publicKey) as BufferSource,
         });
+      }
+
+      if (subscription) {
+        const json = subscription.toJSON();
+        if (json.endpoint && json.keys?.p256dh && json.keys?.auth) {
+          await trpc.push.registerWebSubscription.mutate({
+            endpoint: json.endpoint,
+            keys: {
+              p256dh: json.keys.p256dh,
+              auth: json.keys.auth,
+            },
+          });
+        }
       }
     }
 
