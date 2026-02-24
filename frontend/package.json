@@ -1,0 +1,36 @@
+{
+  "name": "@chatup/frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@chatup/shared": "*",
+    "@ionic/vue": "^8.2.0",
+    "@ionic/vue-router": "^8.2.0",
+    "@trpc/client": "^10.45.2",
+    "@trpc/server": "^10.45.2",
+    "@vueuse/core": "^10.9.0",
+    "dexie": "^4.0.4",
+    "ionicons": "^7.4.0",
+    "pinia": "^2.1.7",
+    "superjson": "^2.2.1",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0",
+    "vue-sonner": "^2.0.9"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "@types/node": "^20.12.11",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11",
+    "vite-plugin-pwa": "^0.20.0",
+    "vue-tsc": "^2.0.19"
+  }
+}
