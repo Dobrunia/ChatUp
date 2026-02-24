@@ -15,8 +15,12 @@ docker-compose up -d
 
 ### 2. Configure Environment Variables
 You need `.env` files for both the frontend and backend.
-- **Backend:** `cp backend/.env.example backend/.env`
-- **Frontend:** `cp frontend/.env.example frontend/.env`
+- **Windows (PowerShell):**
+  - Backend: `Copy-Item backend/.env.example backend/.env`
+  - Frontend: `Copy-Item frontend/.env.example frontend/.env`
+- **macOS/Linux:**
+  - Backend: `cp backend/.env.example backend/.env`
+  - Frontend: `cp frontend/.env.example frontend/.env`
 
 *(The fallback values in the backend defaults will work perfectly with the local Docker database)*
 
@@ -33,10 +37,18 @@ npm run db:migrate --workspace=backend
 ```
 
 ### 5. Start the Application
-Start both the Frontend and Backend servers simultaneously:
+Start servers in two separate terminals (recommended):
+
+- **Terminal 1 (Backend):**
 ```bash
-npm run dev
+npm run dev --workspace=backend
 ```
+
+- **Terminal 2 (Frontend):**
+```bash
+npm run dev --workspace=frontend
+```
+
 - **Frontend** runs at `http://localhost:5173`
 - **Backend API** runs at `http://localhost:3000`
 

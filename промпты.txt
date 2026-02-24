@@ -1,0 +1,3 @@
+@mobile-design @frontend-design @tailwind-patterns @ui-ux-pro-max
+
+@senior-fullstack @frontend-developer @backend-dev-guidelines @api-patterns @database-design @typescript-expert @javascript-pro @react-best-practices @nodejs-best-practices @mobile-developer @senior-architect @architecture-patterns @microservices-patterns @event-sourcing-architect @architecture-decision-records
