@@ -104,7 +104,6 @@ import Card from '@/components/ui/Card.vue';
 import Input from '@/components/ui/Input.vue';
 import Button from '@/components/ui/Button.vue';
 import { useAuthStore } from '@/stores/auth';
-import { trpc } from '@/api/trpc';
 import { useDebounceFn } from '@vueuse/core';
 import { toast } from 'vue-sonner';
 
@@ -138,14 +137,14 @@ const checkUsernameAvailability = useDebounceFn(async () => {
   if (signupForm.username.length < 3) return;
   
   try {
-    const res = await trpc.auth.checkUsername.query({ username: signupForm.username });
+    const res = await authStore.checkUsernameAvailability(signupForm.username);
     if (!res.available) {
       usernameError.value = 'Логин уже занят';
     } else {
       usernameError.value = '';
     }
-  } catch (err: any) {
-    if (err.data?.httpStatus === 429) {
+  } catch (err: unknown) {
+    if ((err as { data?: { httpStatus?: number } })?.data?.httpStatus === 429) {
       toast.warning('Слишком частые проверки. Подождите немного.');
     }
   }
@@ -175,11 +174,8 @@ const handleLogin = async () => {
   
   loading.value = true;
   try {
-    const res = await trpc.auth.login.mutate(loginForm);
-    authStore.setTokens(res.accessToken, res.refreshToken);
+    await authStore.login(loginForm.username, loginForm.password);
     router.replace('/chats');
-  } catch (error) {
-    // Errors are already handled globally by vue-sonner in trpc link
   } finally {
     loading.value = false;
   }
@@ -190,16 +186,13 @@ const handleSignup = async () => {
   
   loading.value = true;
   try {
-    const res = await trpc.auth.signup.mutate({
+    await authStore.signup({
       username: signupForm.username,
       displayName: signupForm.displayName,
       password: signupForm.password,
       passwordConfirm: signupForm.passwordConfirm
     });
-    authStore.setTokens(res.accessToken, res.refreshToken);
     router.replace('/chats');
-  } catch (error) {
-    // global error handler
   } finally {
     loading.value = false;
   }

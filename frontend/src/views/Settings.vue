@@ -170,13 +170,13 @@ const handleLogout = async () => {
 .ru-toggle-knob {
   width: 20px;
   height: 20px;
-  background-color: white;
+  background-color: var(--ru-color-bg-primary);
   border-radius: 50%;
   position: absolute;
   top: 2px;
   left: 2px;
   transition: transform 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: var(--ru-shadow-card);
 }
 
 .ru-toggle.is-active .ru-toggle-knob {

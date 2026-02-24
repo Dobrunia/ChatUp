@@ -56,7 +56,6 @@ import Input from '@/components/ui/Input.vue';
 import Button from '@/components/ui/Button.vue';
 import Avatar from '@/components/ui/Avatar.vue';
 import { useProfileStore } from '@/stores/profile';
-import { trpc } from '@/api/trpc';
 import { useDebounceFn } from '@vueuse/core';
 import { toast } from 'vue-sonner';
 
@@ -101,14 +100,14 @@ const checkUsernameAvailability = useDebounceFn(async () => {
   if (!hasUsernameChanges.value) return;
   
   try {
-    const res = await trpc.auth.checkUsername.query({ username: usernameForm.username });
+    const res = await profileStore.checkUsernameAvailability(usernameForm.username);
     if (!res.available) {
       usernameError.value = 'Логин уже занят';
     } else {
       usernameError.value = '';
     }
-  } catch (err: any) {
-    if (err.data?.httpStatus === 429) {
+  } catch (err: unknown) {
+    if ((err as { data?: { httpStatus?: number } })?.data?.httpStatus === 429) {
       toast.warning('Слишком частые проверки. Подождите немного.');
     }
   }

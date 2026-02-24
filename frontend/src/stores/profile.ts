@@ -29,11 +29,16 @@ export const useProfileStore = defineStore('profile', () => {
     return data;
   };
 
+  const checkUsernameAvailability = (username: string) => {
+    return trpc.auth.checkUsername.query({ username });
+  };
+
   return {
     profile,
     isLoading,
     fetchProfile,
     updateProfile,
-    updateUsername
+    updateUsername,
+    checkUsernameAvailability
   };
 });

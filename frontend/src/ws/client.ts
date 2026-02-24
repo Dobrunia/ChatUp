@@ -3,6 +3,7 @@ import { WS_EVENTS } from '@chatup/shared/src/protocol';
 import { useAuthStore } from '../stores/auth';
 import { useChatStore } from '../stores/chat';
 import { config } from '../config';
+import type { MessageItem } from '../api/types';
 
 class WsClient {
   private client: W3CWebSocket | null = null;
@@ -70,7 +71,7 @@ class WsClient {
     
     switch (payload.type) {
       case WS_EVENTS.SERVER.NEW_MESSAGE:
-        chatStore.handleIncomingMessage(payload.data);
+        chatStore.handleIncomingMessage(payload.data as MessageItem);
         break;
       case WS_EVENTS.SERVER.DELIVERED_RECEIPT:
         // Receipt model — MVP: log only, message status tracked separately
