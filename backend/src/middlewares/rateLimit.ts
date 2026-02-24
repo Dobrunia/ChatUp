@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
 
 const memoryStore = new Map<string, { count: number; resetAt: number }>();
 
@@ -22,7 +23,7 @@ export function rateLimit(key: string, limit: number, windowMs: number) {
   if (record.count >= limit) {
     throw new TRPCError({
       code: 'TOO_MANY_REQUESTS',
-      message: 'Rate limit exceeded, try again later',
+      message: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED,
     });
   }
 

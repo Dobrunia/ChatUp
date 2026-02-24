@@ -2,7 +2,7 @@ import { prisma } from '../../db/prisma';
 import { TRPCError } from '@trpc/server';
 import { v4 as uuidv4 } from 'uuid';
 import { config } from '../../config';
-import { LIMITS } from '@chatup/shared/src/protocol';
+import { ERROR_MESSAGES, LIMITS } from '@chatup/shared/src/protocol';
 import { MEDIA_LIMITS } from '../../config/constants';
 import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -24,13 +24,13 @@ export class MediaService {
     const isVideo = mime.startsWith('video/');
     
     if (isImage && size > LIMITS.IMAGE_MAX_SIZE_MB * MEDIA_LIMITS.BYTES_IN_MB) {
-      throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: 'Image too large' });
+      throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: ERROR_MESSAGES.IMAGE_TOO_LARGE });
     }
     if (isVideo && size > LIMITS.VIDEO_MAX_SIZE_MB * MEDIA_LIMITS.BYTES_IN_MB) {
-      throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: 'Video too large' });
+      throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: ERROR_MESSAGES.VIDEO_TOO_LARGE });
     }
     if (size > LIMITS.FILE_MAX_SIZE_MB * MEDIA_LIMITS.BYTES_IN_MB) {
-      throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: 'File too large' });
+      throw new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: ERROR_MESSAGES.FILE_TOO_LARGE });
     }
 
     const key = `${userId}/${uuidv4()}`;
@@ -59,7 +59,7 @@ export class MediaService {
   static async confirmUpload(attachmentId: string, userId: string) {
     const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId } });
     if (!attachment || attachment?.ownerId !== userId) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Attachment not found' });
+      throw new TRPCError({ code: 'NOT_FOUND', message: ERROR_MESSAGES.ATTACHMENT_NOT_FOUND });
     }
 
     let fileExistsInS3 = false;
@@ -74,7 +74,7 @@ export class MediaService {
     }
 
     if (!fileExistsInS3) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'File not uploaded to S3' });
+      throw new TRPCError({ code: 'BAD_REQUEST', message: ERROR_MESSAGES.ATTACHMENT_NOT_UPLOADED });
     }
 
     return prisma.attachment.update({
@@ -86,7 +86,7 @@ export class MediaService {
   static async getDownloadUrl(attachmentId: string, userId: string) {
     const attachment = await prisma.attachment.findUnique({ where: { id: attachmentId } });
     if (!attachment || attachment?.status !== 'READY') {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Attachment not ready or not found' });
+      throw new TRPCError({ code: 'NOT_FOUND', message: ERROR_MESSAGES.ATTACHMENT_NOT_READY });
     }
 
     const isOwner = attachment.ownerId === userId;
@@ -97,11 +97,11 @@ export class MediaService {
           where: { dialogId_userId: { dialogId: message.dialogId, userId } }
         });
         if (!member) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+          throw new TRPCError({ code: 'FORBIDDEN', message: ERROR_MESSAGES.ACCESS_DENIED });
         }
       }
     } else if (!isOwner) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      throw new TRPCError({ code: 'FORBIDDEN', message: ERROR_MESSAGES.ACCESS_DENIED });
     }
 
     const downloadCommand = new GetObjectCommand({

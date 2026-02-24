@@ -1,5 +1,6 @@
 import { prisma } from '../../db/prisma';
 import { TRPCError } from '@trpc/server';
+import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
 
 export class ProfileService {
   static async getProfile(userId: string) {
@@ -8,7 +9,7 @@ export class ProfileService {
       select: { id: true, username: true, displayName: true, avatarUrl: true }
     });
     if (!user) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      throw new TRPCError({ code: 'NOT_FOUND', message: ERROR_MESSAGES.USER_NOT_FOUND });
     }
     return user;
   }
@@ -32,9 +33,9 @@ export class ProfileService {
       return user;
     } catch (e: any) {
       if (e.code === 'P2002') {
-        throw new TRPCError({ code: 'CONFLICT', message: 'Username already taken' });
+        throw new TRPCError({ code: 'CONFLICT', message: ERROR_MESSAGES.USERNAME_TAKEN });
       }
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to update username' });
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: ERROR_MESSAGES.USERNAME_UPDATE_FAILED });
     }
   }
 }

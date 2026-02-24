@@ -26,7 +26,7 @@
           <!-- Login Form -->
           <form v-if="mode === 'login'" @submit.prevent="handleLogin" class="auth-form">
             <Input 
-              v-model="loginForm.username" 
+              :model-value="loginForm.username" 
               label="Логин (username)" 
               placeholder="@ivan"
               :hint="USERNAME_HINT"
@@ -58,7 +58,7 @@
               :disabled="loading"
             />
             <Input 
-              v-model="signupForm.username" 
+              :model-value="signupForm.username" 
               label="Уникальный логин" 
               placeholder="@ivan"
               :hint="USERNAME_HINT"
@@ -111,6 +111,7 @@ import { toast } from 'vue-sonner';
 import {
   LIMITS,
   PASSWORD_HINT,
+  TOAST_MESSAGES,
   USERNAME_HINT,
   isRateLimitError,
   isValidPasswordLength,
@@ -155,7 +156,7 @@ const checkUsernameAvailability = useDebounceFn(async () => {
     }
   } catch (err: unknown) {
     if (isRateLimitError(err)) {
-      toast.warning('Слишком частые проверки. Подождите немного.');
+      toast.warning(TOAST_MESSAGES.TOO_MANY_USERNAME_CHECKS);
     }
   }
 }, 500);
@@ -176,6 +177,7 @@ const isSignupValid = computed(() => {
          signupForm.username.length >= LIMITS.USERNAME_MIN_LENGTH && 
          !usernameError.value &&
          isValidPasswordLength(signupForm.password) && 
+         signupForm.passwordConfirm.length > 0 &&
          !passwordMatchError.value;
 });
 
@@ -186,6 +188,8 @@ const handleLogin = async () => {
   try {
     await authStore.login(loginForm.username, loginForm.password);
     router.replace('/chats');
+  } catch {
+    // Error is handled by global tRPC error link.
   } finally {
     loading.value = false;
   }
@@ -203,6 +207,8 @@ const handleSignup = async () => {
       passwordConfirm: signupForm.passwordConfirm
     });
     router.replace('/chats');
+  } catch {
+    // Error is handled by global tRPC error link.
   } finally {
     loading.value = false;
   }

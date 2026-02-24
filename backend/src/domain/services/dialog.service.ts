@@ -1,5 +1,6 @@
 import { prisma } from '../../db/prisma';
 import { TRPCError } from '@trpc/server';
+import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
 import { SearchService } from './search.service';
 
 export class DialogService {
@@ -8,18 +9,18 @@ export class DialogService {
       where: { dialogId_userId: { dialogId, userId } }
     });
     if (!member) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a member of this dialog' });
+      throw new TRPCError({ code: 'FORBIDDEN', message: ERROR_MESSAGES.DIALOG_MEMBERSHIP_REQUIRED });
     }
     return member;
   }
 
   static async getOrCreateDirectDialog(userId1: string, userId2: string) {
     if (userId1 === userId2) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot create dialog with self' });
+      throw new TRPCError({ code: 'BAD_REQUEST', message: ERROR_MESSAGES.DIALOG_SELF_FORBIDDEN });
     }
 
     if (await SearchService.isBlocked(userId1, userId2)) {
-      throw new TRPCError({ code: 'FORBIDDEN', message: 'Blocked by user' });
+      throw new TRPCError({ code: 'FORBIDDEN', message: ERROR_MESSAGES.DIALOG_BLOCKED });
     }
 
     // Direct dialogs usually have exactly these two members. 

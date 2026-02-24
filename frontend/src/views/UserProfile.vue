@@ -61,6 +61,7 @@ import { useSearchStore } from '@/stores/search';
 import { useDialogsStore } from '@/stores/dialogs';
 import type { UserSearchResultLocal } from '@/api/types';
 import { toast } from 'vue-sonner';
+import { TOAST_MESSAGES } from '@chatup/shared/src/protocol';
 
 const route = useRoute();
 const router = useRouter();
@@ -85,7 +86,7 @@ onMounted(async () => {
     // For simplicity in this demo, if they come via direct link and not search, they might see not found.
     // Realistically backend needs a `profile.getById` or similar for this view, but we stick to MVP trpc spec.
     isLoading.value = false;
-    toast.error('Пользователь должен быть найден через поиск.');
+    toast.error(TOAST_MESSAGES.USER_NOT_LOADED_FOR_PROFILE);
   }
 });
 
@@ -96,7 +97,7 @@ const openChat = async () => {
     const dialog = await dialogsStore.getOrCreateDirectDialog(user.value.id);
     router.push(`/chat/${dialog.dialogId}`);
   } catch (error) {
-    // Error mapped globally
+    if (import.meta.env.DEV) console.debug('openChat failed', error);
   } finally {
     chatLoading.value = false;
   }
@@ -109,14 +110,14 @@ const toggleBlock = async (block: boolean) => {
     if (block) {
       await searchStore.blockUser(user.value.id);
       user.value.isBlocked = true;
-      toast.success('Пользователь заблокирован');
+      toast.success(TOAST_MESSAGES.USER_BLOCKED);
     } else {
       await searchStore.unblockUser(user.value.id);
       user.value.isBlocked = false;
-      toast.success('Пользователь разблокирован');
+      toast.success(TOAST_MESSAGES.USER_UNBLOCKED);
     }
   } catch (error) {
-    // global error handler
+    if (import.meta.env.DEV) console.debug('toggleBlock failed', error);
   } finally {
     blockLoading.value = false;
   }

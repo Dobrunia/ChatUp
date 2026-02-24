@@ -1,8 +1,8 @@
 import { prisma } from '../../db/prisma';
 import { TRPCError } from '@trpc/server';
+import { ERROR_MESSAGES, WS_EVENTS } from '@chatup/shared/src/protocol';
 import { DialogService } from './dialog.service';
 import { wsGateway } from '../../ws/gateway';
-import { WS_EVENTS } from '@chatup/shared/src/protocol';
 import { PushService } from './push.service';
 
 export class MessageService {
@@ -58,7 +58,7 @@ export class MessageService {
           return existingMessage;
         }
       }
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to send message' });
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: ERROR_MESSAGES.MESSAGE_SEND_FAILED });
     }
   }
 
@@ -78,7 +78,7 @@ export class MessageService {
 
   static async markDelivered(messageId: string, userId: string) {
     const message = await prisma.message.findUnique({ where: { id: messageId } });
-    if (!message) throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found' });
+    if (!message) throw new TRPCError({ code: 'NOT_FOUND', message: ERROR_MESSAGES.MESSAGE_NOT_FOUND });
     
     await DialogService.assertMembership(message.dialogId, userId);
 
@@ -97,7 +97,7 @@ export class MessageService {
     await DialogService.assertMembership(dialogId, userId);
 
     const message = await prisma.message.findUnique({ where: { id: messageId } });
-    if (!message) throw new TRPCError({ code: 'NOT_FOUND', message: 'Message not found' });
+    if (!message) throw new TRPCError({ code: 'NOT_FOUND', message: ERROR_MESSAGES.MESSAGE_NOT_FOUND });
 
     const receipt = await prisma.receipt.upsert({
       where: { messageId_userId: { messageId, userId } },

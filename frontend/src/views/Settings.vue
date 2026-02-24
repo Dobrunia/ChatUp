@@ -66,6 +66,7 @@ import { useProfileStore } from '@/stores/profile';
 import { useSettingsStore } from '@/stores/settings';
 import { pushService } from '@/services/push.service';
 import { toast } from 'vue-sonner';
+import { TOAST_MESSAGES } from '@chatup/shared/src/protocol';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -79,17 +80,18 @@ onMounted(() => {
 });
 
 const togglePush = async () => {
-  if (!settingsStore.notificationsEnabled) {
-    const granted = await pushService.initPush();
-    if (granted) {
-      settingsStore.toggleNotifications(true);
-      toast.success('Уведомления включены');
-    } else {
-      toast.error('Доступ к уведомлениям запрещён');
-    }
-  } else {
+  if (settingsStore.notificationsEnabled) {
     settingsStore.toggleNotifications(false);
-    toast.success('Уведомления отключены');
+    toast.success(TOAST_MESSAGES.PUSH_DISABLED);
+    return;
+  }
+
+  const granted = await pushService.initPush();
+  if (granted) {
+    settingsStore.toggleNotifications(true);
+    toast.success(TOAST_MESSAGES.PUSH_ENABLED);
+  } else {
+    toast.error(TOAST_MESSAGES.PUSH_PERMISSION_DENIED);
   }
 };
 

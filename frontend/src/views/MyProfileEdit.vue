@@ -58,7 +58,7 @@ import Avatar from '@/components/ui/Avatar.vue';
 import { useProfileStore } from '@/stores/profile';
 import { useDebounceFn } from '@vueuse/core';
 import { toast } from 'vue-sonner';
-import { LIMITS, USERNAME_HINT, isRateLimitError, normalizeUsername } from '@chatup/shared/src/protocol';
+import { LIMITS, TOAST_MESSAGES, USERNAME_HINT, isRateLimitError, normalizeUsername } from '@chatup/shared/src/protocol';
 
 const router = useRouter();
 const profileStore = useProfileStore();
@@ -109,7 +109,7 @@ const checkUsernameAvailability = useDebounceFn(async () => {
     }
   } catch (err: unknown) {
     if (isRateLimitError(err)) {
-      toast.warning('Слишком частые проверки. Подождите немного.');
+      toast.warning(TOAST_MESSAGES.TOO_MANY_USERNAME_CHECKS);
     }
   }
 }, 500);
@@ -118,7 +118,7 @@ const handleUpdateProfile = async () => {
   loading.value = true;
   try {
     await profileStore.updateProfile(editForm.displayName);
-    toast.success('Профиль обновлен');
+    toast.success(TOAST_MESSAGES.PROFILE_UPDATED);
   } finally {
     loading.value = false;
   }
@@ -128,7 +128,7 @@ const handleUpdateUsername = async () => {
   usernameLoading.value = true;
   try {
     await profileStore.updateUsername(usernameForm.username);
-    toast.success('Логин изменен');
+    toast.success(TOAST_MESSAGES.USERNAME_UPDATED);
   } finally {
     usernameLoading.value = false;
   }

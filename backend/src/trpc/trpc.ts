@@ -1,6 +1,7 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
+import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
 import { verifyAccessToken } from '../auth/jwt';
 import { logger } from '../utils/logger';
 
@@ -51,7 +52,7 @@ export const publicProcedure = t.procedure;
 
 const isAuthed = t.middleware(({ ctx, next }) => {
   if (!ctx.user) {
-    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: ERROR_MESSAGES.AUTH_REQUIRED });
   }
   return next({
     ctx: {

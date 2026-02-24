@@ -6,6 +6,7 @@ import { AuthService } from '../domain/services/auth.service';
 import { rateLimit } from '../middlewares/rateLimit';
 import { RATE_LIMITS } from '../config/constants';
 import {
+  ERROR_MESSAGES,
   LIMITS,
   USERNAME_VALIDATION_MESSAGE,
   isValidUsername,
@@ -29,7 +30,7 @@ export const authRouter = router({
       password: z.string().min(LIMITS.PASSWORD_MIN_LENGTH),
       passwordConfirm: z.string()
     }).refine(data => data.password === data.passwordConfirm, {
-      message: "Passwords don't match",
+      message: ERROR_MESSAGES.PASSWORDS_DONT_MATCH,
       path: ["passwordConfirm"]
     }))
     .mutation(async ({ input, ctx }) => {
