@@ -23,23 +23,75 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { IonApp, IonRouterOutlet } from '@ionic/vue'
 import { Toaster } from 'vue-sonner'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
+import { config } from '@/config'
 
 const toasterOffset = 'calc(env(safe-area-inset-top, 0px) + 12px)';
 const dismissed = ref(false);
 const { needRefresh, updateServiceWorker } = useRegisterSW();
+const needNativeUpdate = ref(false);
+const releaseUrl = ref('');
 
-const showUpdateBanner = computed(() => needRefresh.value && !dismissed.value);
+const showUpdateBanner = computed(() => (needRefresh.value || needNativeUpdate.value) && !dismissed.value);
+
+function parseVersion(version: string): number[] {
+  const normalized = version.trim().replace(/^v/i, '');
+  return normalized.split('.').map((part) => Number.parseInt(part, 10) || 0);
+}
+
+function isVersionGreater(current: string, next: string): boolean {
+  const a = parseVersion(current);
+  const b = parseVersion(next);
+  const maxLen = Math.max(a.length, b.length);
+  for (let i = 0; i < maxLen; i += 1) {
+    const av = a[i] ?? 0;
+    const bv = b[i] ?? 0;
+    if (bv > av) return true;
+    if (bv < av) return false;
+  }
+  return false;
+}
+
+function getRepoPath(repoUrl: string): string {
+  return repoUrl
+    .trim()
+    .replace(/^https?:\/\/github\.com\//i, '')
+    .replace(/^github\.com\//i, '')
+    .replace(/\/+$/, '');
+}
+
+onMounted(async () => {
+  try {
+    const repoPath = getRepoPath(config.app.githubRepo);
+    if (!repoPath) return;
+    const res = await fetch(`https://api.github.com/repos/${repoPath}/releases/latest`);
+    if (!res.ok) return;
+    const data = (await res.json()) as { tag_name?: string; html_url?: string };
+    if (!data.tag_name) return;
+    if (isVersionGreater(config.app.version, data.tag_name)) {
+      needNativeUpdate.value = true;
+      releaseUrl.value = data.html_url || `${config.app.githubRepo.replace(/\/+$/, '')}/releases/latest`;
+    }
+  } catch {
+    // Ignore network/API errors: SW-based update banner still works.
+  }
+});
 
 const dismissUpdateBanner = () => {
   dismissed.value = true;
 };
 
 const applyUpdate = () => {
-  void updateServiceWorker(true);
+  if (needRefresh.value) {
+    void updateServiceWorker(true);
+    return;
+  }
+  if (releaseUrl.value) {
+    globalThis.location.href = releaseUrl.value;
+  }
 };
 </script>
 

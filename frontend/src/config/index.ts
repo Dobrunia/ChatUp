@@ -19,6 +19,10 @@ function getOptionalEnv(key: keyof ImportMetaEnv): string | undefined {
 }
 
 export const config = {
+  app: {
+    version: __APP_VERSION__,
+    githubRepo: __GITHUB_REPO__,
+  },
   api: {
     url: getEnv('VITE_API_URL', 'http://localhost:3000/trpc'),
   },

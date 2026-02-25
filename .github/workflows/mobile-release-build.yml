@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   check-release-version:
@@ -145,6 +145,42 @@ jobs:
           name: ios-archive-${{ needs.check-release-version.outputs.current_version }}
           path: frontend/ios/build/App.xcarchive
           if-no-files-found: warn
+
+  create-github-release:
+    needs:
+      - check-release-version
+      - build-android
+      - build-ios
+    if: needs.check-release-version.outputs.version_changed == 'true' && (needs.build-android.result == 'success' || needs.build-android.result == 'skipped') && (needs.build-ios.result == 'success' || needs.build-ios.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Android artifacts
+        if: needs.build-android.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: android-release-${{ needs.check-release-version.outputs.current_version }}
+          path: release-assets/android
+
+      - name: Download iOS artifacts
+        if: needs.build-ios.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-archive-${{ needs.check-release-version.outputs.current_version }}
+          path: release-assets/ios
+
+      - name: Create GitHub release with mobile artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.check-release-version.outputs.current_version }}
+          name: ChatUp v${{ needs.check-release-version.outputs.current_version }}
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: |
+            release-assets/android/**/*.apk
+            release-assets/android/**/*.aab
+            release-assets/ios/**/*
 
   release-build-skip-info:
     needs: check-release-version
