@@ -1,13 +1,16 @@
 {
   "name": "@chatup/frontend",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "clean": "node -e \"require('fs').rmSync('dist',{ recursive: true, force: true })\"",
     "build": "npm run clean && vue-tsc --noEmit && vite build --outDir dist",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "sync:android": "npx cap sync android",
+    "sync:ios": "npx cap sync ios",
+    "sync:mobile": "npm run sync:android && npm run sync:ios"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.1",

@@ -91,6 +91,10 @@ jobs:
 
       - name: Build frontend
         run: npm run build -w frontend
+        env:
+          VITE_API_URL: https://chatup.na4u.ru/trpc
+          VITE_WS_URL: wss://chatup.na4u.ru
+          VITE_WEB_PUSH_PUBLIC_KEY: ${{ vars.VITE_WEB_PUSH_PUBLIC_KEY }}
 
       - name: Sync Capacitor Android project
         run: npx cap sync android
@@ -171,6 +175,10 @@ jobs:
 
       - name: Build frontend
         run: npm run build -w frontend
+        env:
+          VITE_API_URL: https://chatup.na4u.ru/trpc
+          VITE_WS_URL: wss://chatup.na4u.ru
+          VITE_WEB_PUSH_PUBLIC_KEY: ${{ vars.VITE_WEB_PUSH_PUBLIC_KEY }}
 
       - name: Sync Capacitor iOS project
         run: npx cap sync ios
