@@ -55,7 +55,7 @@ import { useDialogsStore } from '@/stores/dialogs';
 import { trpc } from '@/api';
 import { resilienceService } from '@/services/resilience.service';
 import { useMediaStore } from '@/stores/media';
-import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
+import { ERROR_MESSAGES } from '@chatup/shared';
 import { notifyError } from '@/utils/errorHandler';
 
 const route = useRoute();

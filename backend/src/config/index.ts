@@ -1,12 +1,41 @@
 import * as dotenv from 'dotenv';
-dotenv.config();
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+
+function loadEnvFiles() {
+  const candidates = [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), 'backend/.env'),
+    path.resolve(__dirname, '../../.env'),
+    path.resolve(__dirname, '../../../.env'),
+  ];
+
+  const loaded = new Set<string>();
+  for (const envPath of candidates) {
+    if (!existsSync(envPath) || loaded.has(envPath)) {
+      continue;
+    }
+    dotenv.config({ path: envPath, override: false });
+    loaded.add(envPath);
+  }
+}
+
+loadEnvFiles();
 
 import { defaults } from './defaults';
 
 const isDev = (process.env.NODE_ENV || defaults.env) === 'development';
 
-function getEnv(key: string, fallback?: string): string {
-  const value = process.env[key];
+function firstDefinedEnv(keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (value) return value;
+  }
+  return undefined;
+}
+
+function getEnv(key: string, fallback?: string, aliases: string[] = []): string {
+  const value = firstDefinedEnv([key, ...aliases]);
   if (!value) {
     if (fallback !== undefined) {
       console.warn(`[CONFIG WARNING] Missing ENV for ${key}, using fallback value for local development.`);
@@ -25,8 +54,8 @@ function getOptionalEnv(key: string, fallback = ''): string {
 }
 
 /** Secrets: fallback allowed ONLY in development; production throws immediately */
-function getSecretEnv(key: string, devFallback: string): string {
-  const value = process.env[key];
+function getSecretEnv(key: string, devFallback: string, aliases: string[] = []): string {
+  const value = firstDefinedEnv([key, ...aliases]);
   if (value) return value;
   if (isDev) {
     console.warn(`[CONFIG WARNING] Missing secret ${key}, using dev fallback. NEVER do this in production.`);
@@ -36,10 +65,10 @@ function getSecretEnv(key: string, devFallback: string): string {
 }
 
 export const config = {
-  env: getEnv('NODE_ENV', defaults.env),
-  port: parseInt(getEnv('PORT', defaults.port.toString()), 10),
+  env: getEnv('NODE_ENV', defaults.env, ['APP_ENV']),
+  port: Number.parseInt(getEnv('PORT', defaults.port.toString(), ['APP_PORT']), 10),
   db: {
-    url: getEnv('DATABASE_URL', defaults.db.url),
+    url: getEnv('DATABASE_URL', defaults.db.url, ['DB_CONNECTION_STRING']),
   },
   jwt: {
     accessSecret: getSecretEnv('JWT_ACCESS_SECRET', defaults.jwt.accessSecret),

@@ -1,6 +1,6 @@
 import { prisma } from '../../db/prisma';
 import { TRPCError } from '@trpc/server';
-import { ERROR_MESSAGES, WS_EVENTS } from '@chatup/shared/src/protocol';
+import { ERROR_MESSAGES, WS_EVENTS } from '@chatup/shared';
 import { DialogService } from './dialog.service';
 import { wsGateway } from '../../ws/gateway';
 import { PushService } from './push.service';

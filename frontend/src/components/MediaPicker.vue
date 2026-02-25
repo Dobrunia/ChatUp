@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useMediaStore } from '@/stores/media';
-import { LIMITS, TOAST_MESSAGES, fileTooLargeToastMessage } from '@chatup/shared/src/protocol';
+import { LIMITS, TOAST_MESSAGES, fileTooLargeToastMessage } from '@chatup/shared';
 import { notifyError } from '@/utils/errorHandler';
 
 defineProps<{

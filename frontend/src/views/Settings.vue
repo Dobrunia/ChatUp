@@ -66,7 +66,7 @@ import { useProfileStore } from '@/stores/profile';
 import { useSettingsStore } from '@/stores/settings';
 import { pushService } from '@/services/push.service';
 import { toast } from 'vue-sonner';
-import { TOAST_MESSAGES } from '@chatup/shared/src/protocol';
+import { TOAST_MESSAGES } from '@chatup/shared';
 import { notifyError } from '@/utils/errorHandler';
 
 const router = useRouter();

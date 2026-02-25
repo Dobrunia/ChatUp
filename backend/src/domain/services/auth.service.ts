@@ -1,6 +1,6 @@
 import argon2 from 'argon2';
 import { Prisma } from '@prisma/client';
-import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
+import { ERROR_MESSAGES } from '@chatup/shared';
 import { prisma } from '../../db/prisma';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../auth/jwt';
 import { TRPCError } from '@trpc/server';

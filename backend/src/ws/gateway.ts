@@ -1,6 +1,6 @@
 import WebSocket, { WebSocketServer } from 'ws';
 import { verifyAccessToken } from '../auth/jwt';
-import { WS_EVENTS } from '@chatup/shared/src/protocol';
+import { WS_EVENTS } from '@chatup/shared';
 import { IncomingMessage, Server as HttpServer } from 'http';
 
 export class WsGateway {
