@@ -122,6 +122,9 @@ jobs:
           set -euo pipefail
           echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > frontend/android/chatup-release.keystore
 
+      - name: Make gradlew executable
+        run: chmod +x frontend/android/gradlew
+
       - name: Build Android release artifact
         env:
           KEYSTORE_FILE: ${{ github.workspace }}/frontend/android/chatup-release.keystore
