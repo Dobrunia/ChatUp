@@ -4,6 +4,7 @@ import { IonicVue } from '@ionic/vue'
 import App from './App.vue'
 import router from './router'
 import { wsClient } from './ws/client'
+import { handleGlobalError } from './utils/errorHandler'
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/vue/css/core.css';
@@ -20,6 +21,7 @@ import '@ionic/vue/css/text-alignment.css';
 import '@ionic/vue/css/text-transformation.css';
 import '@ionic/vue/css/flex-utils.css';
 import '@ionic/vue/css/display.css';
+import 'vue-sonner/style.css';
 
 /* RussianUI Tokens */
 import './theme/russianui.tokens.css';
@@ -30,6 +32,19 @@ const pinia = createPinia()
 app.use(IonicVue)
 app.use(pinia)
 app.use(router) // Router must be used after pinia is initialized so guards can use stores
+
+if (globalThis.window !== undefined) {
+  globalThis.window.addEventListener('unhandledrejection', (event) => {
+    handleGlobalError(event.reason);
+    event.preventDefault();
+  });
+
+  globalThis.window.addEventListener('error', (event) => {
+    if (event.error) {
+      handleGlobalError(event.error);
+    }
+  });
+}
 
 async function bootstrapClientApp() {
   await router.isReady();

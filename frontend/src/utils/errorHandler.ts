@@ -15,6 +15,9 @@ const legacyMessageMap: Record<string, string> = {
   'Rate limit exceeded, try again later': ERROR_MESSAGES.RATE_LIMIT_EXCEEDED,
 };
 
+let lastNotifiedMessage = '';
+let lastNotifiedAt = 0;
+
 function tryExtractJsonMessage(raw: string): string | null {
   try {
     const parsed = JSON.parse(raw) as Array<{ message?: string }> | { message?: string };
@@ -64,10 +67,24 @@ export function extractUserErrorMessage(error: unknown): string {
   return message;
 }
 
+export function notifyError(errorOrMessage: unknown, fallbackMessage = 'Произошла ошибка при выполнении операции.') {
+  const message =
+    typeof errorOrMessage === 'string'
+      ? errorOrMessage
+      : extractUserErrorMessage(errorOrMessage) || fallbackMessage;
+  const now = Date.now();
+  if (message === lastNotifiedMessage && now - lastNotifiedAt < 900) {
+    return;
+  }
+  lastNotifiedMessage = message;
+  lastNotifiedAt = now;
+  toast.error(message);
+}
+
 /**
  * Global error handler for the frontend.
  * Shows a toast and can log to an external service.
  */
 export function handleGlobalError(error: unknown) {
-  toast.error(extractUserErrorMessage(error));
+  notifyError(error);
 }

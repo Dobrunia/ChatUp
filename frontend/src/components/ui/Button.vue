@@ -102,8 +102,12 @@ defineEmits(['click']);
 
 /* States */
 .ru-btn:disabled {
-  opacity: 0.5;
+  opacity: 1;
   cursor: not-allowed;
+  background-color: var(--ru-color-bg-tertiary) !important;
+  color: var(--ru-color-text-tertiary) !important;
+  border: 1px dashed var(--ru-color-text-tertiary);
+  box-shadow: none;
 }
 
 .is-loading .ru-btn-content {

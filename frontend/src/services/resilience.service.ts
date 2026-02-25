@@ -2,6 +2,7 @@ import { trpc } from '../api';
 import { db } from '../db';
 import { v4 as uuidv4 } from 'uuid';
 import { useChatStore } from '../stores/chat';
+import { useProfileStore } from '../stores/profile';
 import { useNetworkState } from '../composables/useNetworkState';
 import { watch } from 'vue';
 
@@ -10,6 +11,25 @@ const MAX_RETRIES = 5;
 class ResilienceService {
   private processingPromise: Promise<void> | null = null;
   private isOnline = true;
+
+  private getCurrentUserId(): string | null {
+    const profileStore = useProfileStore();
+    if (profileStore.profile?.id) {
+      return profileStore.profile.id;
+    }
+
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    try {
+      const [, payload] = token.split('.');
+      if (!payload) return null;
+      const parsed = JSON.parse(atob(payload.replaceAll('-', '+').replaceAll('_', '/'))) as { userId?: string };
+      return typeof parsed.userId === 'string' && parsed.userId.length > 0 ? parsed.userId : null;
+    } catch {
+      return null;
+    }
+  }
 
   public init() {
     const { isOnline } = useNetworkState();
@@ -25,12 +45,13 @@ class ResilienceService {
   public async enqueueMessage(dialogId: string, content: string, attachmentIds: string[] = []) {
     const clientMessageId = uuidv4();
     const chatStore = useChatStore();
+    const currentUserId = this.getCurrentUserId();
 
     chatStore.addOptimisticMessage({
       id: '',
       clientMessageId,
       dialogId,
-      senderId: 'optimistic',
+      senderId: currentUserId ?? 'optimistic',
       content,
       createdAt: new Date(),
       deletedAt: null

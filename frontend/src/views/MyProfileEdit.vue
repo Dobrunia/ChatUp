@@ -28,12 +28,29 @@
               v-model="usernameForm.username" 
               label="Уникальный логин" 
               :hint="USERNAME_HINT"
-              :error="usernameError"
+              :error="usernameFieldError"
               @update:modelValue="onUsernameInput"
               @blur="checkUsernameAvailability"
               :disabled="usernameLoading"
             />
-            <Button type="submit" variant="secondary" :loading="usernameLoading" :disabled="!hasUsernameChanges || !!usernameError">
+            <div class="username-checklist" v-if="usernameTouched">
+              <span
+                class="check-item"
+                :class="{ valid: usernameForm.username.length >= LIMITS.USERNAME_MIN_LENGTH && usernameForm.username.length <= LIMITS.USERNAME_MAX_LENGTH }"
+              >
+                {{ `Длина ${LIMITS.USERNAME_MIN_LENGTH}-${LIMITS.USERNAME_MAX_LENGTH} символов` }}
+              </span>
+              <span
+                class="check-item"
+                :class="{
+                  valid: !usernameInvalidChars && usernameForm.username.length > 0,
+                  error: usernameInvalidChars,
+                }"
+              >
+                Только строчные латинские буквы (a-z)
+              </span>
+            </div>
+            <Button type="submit" variant="secondary" :loading="usernameLoading" :disabled="!hasUsernameChanges || !!usernameFieldError">
               Сменить логин
             </Button>
           </form>
@@ -48,7 +65,6 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { IonPage, IonContent } from '@ionic/vue';
 import Header from '@/components/ui/Header.vue';
 import Card from '@/components/ui/Card.vue';
@@ -58,10 +74,19 @@ import Avatar from '@/components/ui/Avatar.vue';
 import { useProfileStore } from '@/stores/profile';
 import { useDebounceFn } from '@vueuse/core';
 import { toast } from 'vue-sonner';
-import { ERROR_MESSAGES, LIMITS, TOAST_MESSAGES, USERNAME_HINT, isRateLimitError, normalizeUsername } from '@chatup/shared/src/protocol';
-import { extractUserErrorMessage } from '@/utils/errorHandler';
+import {
+  ERROR_MESSAGES,
+  LIMITS,
+  TOAST_MESSAGES,
+  USERNAME_CHARS_ONLY_MESSAGE,
+  USERNAME_HINT,
+  USERNAME_VALIDATION_MESSAGE,
+  isRateLimitError,
+  isValidUsername,
+  normalizeUsername,
+} from '@chatup/shared/src/protocol';
+import { extractUserErrorMessage, notifyError } from '@/utils/errorHandler';
 
-const router = useRouter();
 const profileStore = useProfileStore();
 
 const loading = ref(false);
@@ -76,6 +101,8 @@ const usernameForm = reactive({
 });
 
 const usernameError = ref('');
+const usernameTouched = ref(false);
+const usernameInvalidChars = ref(false);
 
 onMounted(async () => {
   await profileStore.fetchProfile();
@@ -90,16 +117,37 @@ const hasProfileChanges = computed(() => {
 });
 
 const hasUsernameChanges = computed(() => {
-  return profileStore.profile && usernameForm.username !== profileStore.profile.username && usernameForm.username.length >= LIMITS.USERNAME_MIN_LENGTH;
+  return (
+    profileStore.profile &&
+    usernameForm.username !== profileStore.profile.username &&
+    usernameForm.username.length >= LIMITS.USERNAME_MIN_LENGTH &&
+    !usernameFieldError.value
+  );
 });
 
 const onUsernameInput = (val: unknown) => {
-  usernameForm.username = normalizeUsername(val);
+  const raw = typeof val === 'string' ? val : '';
+  usernameForm.username = normalizeUsername(raw);
+  usernameTouched.value = true;
+  const usernameRawWithoutAt = raw.replace(/^@+/, '').toLowerCase();
+  usernameInvalidChars.value = /[^a-z]/.test(usernameRawWithoutAt);
   usernameError.value = '';
 };
 
+const usernameValidationError = computed(() => {
+  if (!usernameTouched.value) return '';
+  if (usernameInvalidChars.value) return USERNAME_CHARS_ONLY_MESSAGE;
+  if (!isValidUsername(usernameForm.username)) return USERNAME_VALIDATION_MESSAGE;
+  return '';
+});
+
+const usernameFieldError = computed(() => {
+  return usernameValidationError.value || usernameError.value;
+});
+
 const checkUsernameAvailability = useDebounceFn(async () => {
   if (!hasUsernameChanges.value) return;
+  if (usernameValidationError.value) return;
   
   try {
     const res = await profileStore.checkUsernameAvailability(usernameForm.username);
@@ -121,6 +169,7 @@ const handleUpdateProfile = async () => {
     await profileStore.updateProfile(editForm.displayName);
     toast.success(TOAST_MESSAGES.PROFILE_UPDATED);
   } catch (error: unknown) {
+    notifyError(error);
     if (import.meta.env.DEV) {
       console.debug('Profile update failed', error);
     }
@@ -139,8 +188,10 @@ const handleUpdateUsername = async () => {
     const message = extractUserErrorMessage(error);
     if (message === ERROR_MESSAGES.USERNAME_TAKEN) {
       usernameError.value = ERROR_MESSAGES.USERNAME_TAKEN;
+      notifyError(ERROR_MESSAGES.USERNAME_TAKEN);
       return;
     }
+    notifyError(message);
     if (import.meta.env.DEV) {
       console.debug('Username update failed', error);
     }
@@ -169,6 +220,23 @@ const handleUpdateUsername = async () => {
   display: flex;
   flex-direction: column;
   gap: var(--ru-spacing-16);
+}
+
+.username-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ru-spacing-4);
+  margin-top: calc(var(--ru-spacing-16) * -1);
+}
+
+.check-item {
+  font-family: var(--ru-font-family);
+  font-size: var(--ru-text-xs);
+  color: var(--ru-color-semantic-error);
+}
+
+.check-item.valid {
+  color: var(--ru-color-semantic-success);
 }
 
 .loading-state {

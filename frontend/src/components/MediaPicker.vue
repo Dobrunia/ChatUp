@@ -20,8 +20,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useMediaStore } from '@/stores/media';
-import { toast } from 'vue-sonner';
 import { LIMITS, TOAST_MESSAGES, fileTooLargeToastMessage } from '@chatup/shared/src/protocol';
+import { notifyError } from '@/utils/errorHandler';
 
 defineProps<{
   disabled?: boolean;
@@ -40,7 +40,7 @@ const handleFileSelect = (event: Event) => {
   
   // Basic validation
   if (target.files.length > 5) {
-    toast.error(TOAST_MESSAGES.MAX_ATTACHMENTS_REACHED);
+    notifyError(TOAST_MESSAGES.MAX_ATTACHMENTS_REACHED);
     return;
   }
 
@@ -53,7 +53,7 @@ const handleFileSelect = (event: Event) => {
       maxMb = LIMITS.VIDEO_MAX_SIZE_MB;
     }
     if (sizeMb > maxMb) {
-      toast.error(fileTooLargeToastMessage(file.name, maxMb));
+      notifyError(fileTooLargeToastMessage(file.name, maxMb));
       continue;
     }
     mediaStore.addDraft(file);

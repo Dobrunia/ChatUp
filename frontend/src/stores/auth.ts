@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { trpc } from '../api';
 import { db } from '../db';
+import { wsClient } from '../ws/client';
 
 export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref(false);
@@ -11,12 +12,18 @@ export const useAuthStore = defineStore('auth', () => {
   const initSession = () => {
     const token = localStorage.getItem('token');
     isAuthenticated.value = !!token;
+    if (token) {
+      wsClient.connect();
+    } else {
+      wsClient.disconnect();
+    }
   };
 
   const setTokens = async (accessToken: string, refreshToken: string) => {
     localStorage.setItem('token', accessToken);
     await db.appMeta.put({ key: REFRESH_TOKEN_KEY, value: refreshToken });
     isAuthenticated.value = true;
+    wsClient.connect();
   };
 
   const logout = async () => {
@@ -27,6 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
         await trpc.auth.logout.mutate({ refreshToken: rToken }).catch(() => {});
       }
     } finally {
+      wsClient.disconnect();
       localStorage.removeItem('token');
       await db.appMeta.delete(REFRESH_TOKEN_KEY);
       isAuthenticated.value = false;

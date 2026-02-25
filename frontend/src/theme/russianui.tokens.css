@@ -1,41 +1,41 @@
 :root {
   /* RussianUI base palette */
-  --ru-bg-primary: #f4f1ea;
-  --ru-bg-secondary: #e7e1d6;
-  --ru-surface: #ffffff;
+  --ru-bg-primary: #f5ebd8;
+  --ru-bg-secondary: #ead8bc;
+  --ru-surface: #fff8ec;
 
-  --ru-text-primary: #1c1c1c;
-  --ru-text-secondary: #4a4a4a;
-  --ru-text-muted: #7a7a7a;
+  --ru-text-primary: #2b1e16;
+  --ru-text-secondary: #5a4330;
+  --ru-text-muted: #816650;
 
-  --ru-accent-red: #b0232a;
-  --ru-accent-gold: #c9a227;
+  --ru-accent-red: #a62922;
+  --ru-accent-gold: #b88a1c;
   --ru-accent-ember: #8b1e1e;
   --ru-accent-ice: #5b7fa6;
 
   /* Existing aliases used across components */
-  --ru-color-brand-primary: var(--ru-accent-ice);
-  --ru-color-brand-primary-hover: #516f91;
-  --ru-color-brand-primary-active: #476280;
-  --ru-color-brand-secondary: #d9e4ef;
+  --ru-color-brand-primary: var(--ru-accent-red);
+  --ru-color-brand-primary-hover: #8f211b;
+  --ru-color-brand-primary-active: #781b17;
+  --ru-color-brand-secondary: #f2dfbe;
 
   --ru-color-text-primary: var(--ru-text-primary);
   --ru-color-text-secondary: var(--ru-text-secondary);
   --ru-color-text-tertiary: var(--ru-text-muted);
-  --ru-color-text-inverse: #ffffff;
+  --ru-color-text-inverse: #fff8ec;
   --ru-color-text-error: var(--ru-accent-red);
 
   --ru-color-bg-primary: var(--ru-surface);
   --ru-color-bg-secondary: var(--ru-bg-primary);
   --ru-color-bg-tertiary: var(--ru-bg-secondary);
-  --ru-color-bg-inverse: #0f1115;
+  --ru-color-bg-inverse: #1a1410;
 
   --ru-color-semantic-error: var(--ru-accent-red);
   --ru-color-semantic-error-bg: #f8e6e7;
   --ru-color-semantic-success: #4f8f58;
   --ru-color-semantic-success-bg: #e6f2e8;
   --ru-color-semantic-warning: var(--ru-accent-gold);
-  --ru-color-semantic-warning-bg: #f8f2df;
+  --ru-color-semantic-warning-bg: #f5e9cf;
 
   /* Spacing */
   --ru-spacing-2: 2px;
@@ -62,10 +62,10 @@
   --ru-text-lg: 18px;
   --ru-text-xl: 24px;
   
-  --ru-shadow-card: 0 2px 6px rgba(0,0,0,0.08);
-  --ru-shadow-modal: 0 2px 6px rgba(0,0,0,0.08);
+  --ru-shadow-card: 0 6px 20px rgba(52, 28, 10, 0.18);
+  --ru-shadow-modal: 0 10px 28px rgba(52, 28, 10, 0.24);
   --ru-app-bg-image: url('../../assets/background/кокошник.webp');
-  --ru-app-bg-overlay: rgba(231, 225, 214, 0.92);
+  --ru-app-bg-overlay: rgba(243, 228, 201, 0.84);
 
   /* Ionic bridge variables */
   --ion-background-color: var(--ru-color-bg-secondary);
@@ -77,39 +77,39 @@
 
 /* Dark mode is primary in RussianUI */
 body.dark {
-  --ru-bg-primary: #0f1115;
-  --ru-bg-secondary: #1a1d23;
-  --ru-surface: #20242b;
+  --ru-bg-primary: #101a28;
+  --ru-bg-secondary: #172435;
+  --ru-surface: #1e2f44;
 
-  --ru-text-primary: #f2f2f2;
-  --ru-text-secondary: #c8c8c8;
-  --ru-text-muted: #8a8a8a;
+  --ru-text-primary: #ecf4ff;
+  --ru-text-secondary: #c0d0e3;
+  --ru-text-muted: #89a0bb;
 
-  --ru-color-brand-primary: var(--ru-accent-ice);
-  --ru-color-brand-primary-hover: #6c90b7;
-  --ru-color-brand-primary-active: #7c9fc5;
-  --ru-color-brand-secondary: #273441;
+  --ru-color-brand-primary: #79a2cf;
+  --ru-color-brand-primary-hover: #8ab3dd;
+  --ru-color-brand-primary-active: #6795c5;
+  --ru-color-brand-secondary: #2a3d54;
 
   --ru-color-text-primary: var(--ru-text-primary);
   --ru-color-text-secondary: var(--ru-text-secondary);
   --ru-color-text-tertiary: var(--ru-text-muted);
-  --ru-color-text-inverse: #0f1115;
-  --ru-color-text-error: #d65c63;
+  --ru-color-text-inverse: #101a28;
+  --ru-color-text-error: #e57a80;
 
   --ru-color-bg-primary: var(--ru-surface);
   --ru-color-bg-secondary: var(--ru-bg-primary);
   --ru-color-bg-tertiary: var(--ru-bg-secondary);
-  --ru-color-bg-inverse: #f2f2f2;
+  --ru-color-bg-inverse: #ecf4ff;
 
-  --ru-color-semantic-error: #d65c63;
-  --ru-color-semantic-error-bg: #311b1f;
-  --ru-color-semantic-success: #6aa872;
-  --ru-color-semantic-success-bg: #203125;
+  --ru-color-semantic-error: #e57a80;
+  --ru-color-semantic-error-bg: #3d2532;
+  --ru-color-semantic-success: #7bb58a;
+  --ru-color-semantic-success-bg: #233a33;
 
-  --ru-shadow-card: 0 2px 8px rgba(0,0,0,0.4);
-  --ru-shadow-modal: 0 8px 24px rgba(0,0,0,0.4);
+  --ru-shadow-card: 0 8px 22px rgba(3, 8, 18, 0.42);
+  --ru-shadow-modal: 0 12px 30px rgba(3, 8, 18, 0.52);
   --ru-app-bg-image: url('../../assets/background/зима.webp');
-  --ru-app-bg-overlay: rgba(26, 29, 35, 0.88);
+  --ru-app-bg-overlay: rgba(16, 26, 40, 0.82);
 
   --ion-background-color: var(--ru-color-bg-secondary);
   --ion-text-color: var(--ru-color-text-primary);
@@ -146,4 +146,19 @@ ion-content::part(background) {
   background-position: center !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
+}
+
+body:not(.dark).ru-bg-bogatyr2 {
+  --ru-app-bg-image: url('../../assets/background/богатырь2.webp');
+  --ru-app-bg-overlay: rgba(247, 230, 194, 0.82);
+}
+
+body:not(.dark).ru-bg-kokoshnik {
+  --ru-app-bg-image: url('../../assets/background/кокошник.webp');
+  --ru-app-bg-overlay: rgba(242, 226, 193, 0.84);
+}
+
+body:not(.dark).ru-bg-khokhloma {
+  --ru-app-bg-image: url('../../assets/background/хохлома.webp');
+  --ru-app-bg-overlay: rgba(244, 219, 164, 0.8);
 }

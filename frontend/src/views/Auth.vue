@@ -29,6 +29,7 @@
               :model-value="loginForm.username" 
               label="Логин (username)" 
               placeholder="@ivan"
+              autocomplete="username"
               :hint="USERNAME_HINT"
               @update:modelValue="onUsernameInput(loginForm, 'username', $event)"
               :disabled="loading"
@@ -38,6 +39,7 @@
               type="password" 
               label="Пароль" 
               placeholder="******" 
+              autocomplete="current-password"
               :hint="PASSWORD_HINT"
               :disabled="loading"
             />
@@ -55,12 +57,14 @@
               v-model="signupForm.displayName" 
               label="Имя (отображаемое)" 
               placeholder="Иван Иванов" 
+              autocomplete="name"
               :disabled="loading"
             />
             <Input 
               :model-value="signupForm.username" 
               label="Уникальный логин" 
               placeholder="@ivan"
+              autocomplete="username"
               :hint="USERNAME_HINT"
               :error="signupUsernameError"
               @update:modelValue="onUsernameInput(signupForm, 'username', $event)"
@@ -83,6 +87,7 @@
               type="password" 
               label="Пароль" 
               placeholder="******" 
+              autocomplete="new-password"
               :hint="PASSWORD_HINT"
               :disabled="loading"
             />
@@ -91,6 +96,7 @@
               type="password" 
               label="Повторите пароль" 
               placeholder="******" 
+              autocomplete="new-password"
               :error="passwordMatchError"
               :disabled="loading"
             />
@@ -119,6 +125,7 @@ import Button from '@/components/ui/Button.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useDebounceFn } from '@vueuse/core';
 import { toast } from 'vue-sonner';
+import { notifyError } from '@/utils/errorHandler';
 import {
   LIMITS,
   PASSWORD_HINT,
@@ -223,8 +230,8 @@ const handleLogin = async () => {
   try {
     await authStore.login(loginForm.username, loginForm.password);
     router.replace('/chats');
-  } catch {
-    // Error is handled by global tRPC error link.
+  } catch (error: unknown) {
+    notifyError(error);
   } finally {
     loading.value = false;
   }
@@ -242,8 +249,8 @@ const handleSignup = async () => {
       passwordConfirm: signupForm.passwordConfirm
     });
     router.replace('/chats');
-  } catch {
-    // Error is handled by global tRPC error link.
+  } catch (error: unknown) {
+    notifyError(error);
   } finally {
     loading.value = false;
   }

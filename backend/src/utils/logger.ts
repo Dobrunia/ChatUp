@@ -33,7 +33,8 @@ export class Logger {
         msg += ` \n  ${colors.debug}${JSON.stringify(meta, null, 2)}${colors.reset}`;
       }
       if (error) {
-        msg += ` \n  ${colors.error}${error.stack || error.message || error}${colors.reset}`;
+        const normalizedError = error instanceof Error ? error.message : String(error);
+        msg += ` \n  ${colors.error}${normalizedError}${colors.reset}`;
       }
       return msg;
     }

@@ -6,6 +6,7 @@
       <VirtualMessageList 
         :messages="chatStore.messages" 
         :currentUserId="profileStore.profile?.id || ''"
+        :receiptStateByMessageId="chatStore.receiptStateByMessageId"
         @load-more="handleLoadMore"
       />
     </ion-content>
@@ -40,10 +41,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { IonPage, IonContent } from '@ionic/vue';
-import { toast } from 'vue-sonner';
 import Header from '@/components/ui/Header.vue';
 import Input from '@/components/ui/Input.vue';
 import VirtualMessageList from '@/components/VirtualMessageList.vue';
@@ -52,9 +52,11 @@ import AttachmentPreview from '@/components/AttachmentPreview.vue';
 import { useChatStore } from '@/stores/chat';
 import { useProfileStore } from '@/stores/profile';
 import { useDialogsStore } from '@/stores/dialogs';
+import { trpc } from '@/api';
 import { resilienceService } from '@/services/resilience.service';
 import { useMediaStore } from '@/stores/media';
 import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
+import { notifyError } from '@/utils/errorHandler';
 
 const route = useRoute();
 const chatStore = useChatStore();
@@ -64,6 +66,7 @@ const mediaStore = useMediaStore();
 
 const dialogId = route.params.dialogId as string;
 const messageText = ref('');
+const lastMarkedMessageId = ref<string | null>(null);
 
 const dialogTitle = computed(() => {
   const d = dialogsStore.dialogs.find(x => x.id === dialogId);
@@ -77,6 +80,32 @@ onMounted(() => {
     profileStore.fetchProfile();
   }
 });
+
+const markLatestAsRead = async () => {
+  const latestMessage = chatStore.messages[0];
+  if (!latestMessage?.id) return;
+  if (latestMessage.id === lastMarkedMessageId.value) return;
+  if (!profileStore.profile?.id) return;
+  if (latestMessage.senderId === profileStore.profile.id) return;
+
+  try {
+    await trpc.message.markRead.mutate({ dialogId, messageId: latestMessage.id });
+    lastMarkedMessageId.value = latestMessage.id;
+    await dialogsStore.fetchDialogs();
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.debug('markLatestAsRead failed', error);
+    }
+  }
+};
+
+watch(
+  () => chatStore.messages[0]?.id,
+  () => {
+    void markLatestAsRead();
+  },
+  { immediate: true }
+);
 
 const handleLoadMore = () => {
   if (!chatStore.isLoading && chatStore.hasMore) {
@@ -98,7 +127,7 @@ const sendMessage = async () => {
     await resilienceService.enqueueMessage(dialogId, text, []);
   } catch (error) {
     messageText.value = text;
-    toast.error(ERROR_MESSAGES.MESSAGE_SEND_FAILED);
+    notifyError(ERROR_MESSAGES.MESSAGE_SEND_FAILED);
     if (import.meta.env.DEV) {
       console.debug('sendMessage failed', error);
     }

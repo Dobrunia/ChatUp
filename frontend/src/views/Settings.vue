@@ -67,6 +67,7 @@ import { useSettingsStore } from '@/stores/settings';
 import { pushService } from '@/services/push.service';
 import { toast } from 'vue-sonner';
 import { TOAST_MESSAGES } from '@chatup/shared/src/protocol';
+import { notifyError } from '@/utils/errorHandler';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -101,7 +102,7 @@ const togglePush = async () => {
     register_failed: TOAST_MESSAGES.PUSH_INIT_FAILED,
   } as const;
 
-  toast.error(pushErrorMessageByReason[result.reason] ?? TOAST_MESSAGES.PUSH_INIT_FAILED);
+  notifyError(pushErrorMessageByReason[result.reason] ?? TOAST_MESSAGES.PUSH_INIT_FAILED);
 };
 
 const toggleTheme = () => {
@@ -114,6 +115,7 @@ const handleLogout = async () => {
     await authStore.logout();
     router.replace('/welcome');
   } catch (error) {
+    notifyError(error);
     if (import.meta.env.DEV) {
       console.debug('Logout failed', error);
     }

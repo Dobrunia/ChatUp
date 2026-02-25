@@ -2,7 +2,8 @@
   <div class="virtual-message-list" ref="containerRef" @scroll="onScroll">
     <div class="messages-inner">
       <div 
-        class="message-wrapper" 
+        class="message-wrapper"
+        :class="{ 'is-mine': item.senderId === currentUserId }"
         v-for="item in messages" 
         :key="item.id || item.clientMessageId"
       >
@@ -33,6 +34,7 @@ import type { MessageItem } from '@/api/types';
 const props = defineProps<{
   messages: MessageItem[];
   currentUserId: string;
+  receiptStateByMessageId?: Record<string, 'pending' | 'sent' | 'read'>;
 }>();
 
 const emit = defineEmits(['load-more']);
@@ -54,10 +56,11 @@ const formatTime = (dateStr: string | Date) => {
 };
 
 const getStatusIcon = (msg: MessageItem) => {
-  // Mock status logic based on MVP plan
-  if (!msg.id) return '⏳'; // sending
-  // Normally read receipts determine read status
-  return '✓'; // sent
+  if (!msg.id) return '⏳';
+  const key = msg.id || msg.clientMessageId;
+  const state = key ? props.receiptStateByMessageId?.[key] : undefined;
+  if (state === 'read') return '✓✓';
+  return '✓';
 };
 </script>
 
@@ -82,6 +85,10 @@ const getStatusIcon = (msg: MessageItem) => {
   width: 100%;
 }
 
+.message-wrapper.is-mine {
+  justify-content: flex-end;
+}
+
 .message-bubble {
   max-width: 80%;
   padding: var(--ru-spacing-8) var(--ru-spacing-12);
@@ -89,16 +96,19 @@ const getStatusIcon = (msg: MessageItem) => {
   background-color: var(--ru-color-bg-primary);
   color: var(--ru-color-text-primary);
   box-shadow: var(--ru-shadow-card);
+  border: 1px solid transparent;
 }
 
 .message-bubble.is-mine {
-  margin-left: auto;
-  background-color: var(--ru-color-brand-secondary);
+  background-color: var(--ru-color-brand-primary);
+  color: var(--ru-color-text-inverse);
   border-bottom-right-radius: 0;
 }
 
 .message-bubble:not(.is-mine) {
   margin-right: auto;
+  background-color: var(--ru-color-bg-primary);
+  border-color: var(--ru-color-bg-tertiary);
   border-bottom-left-radius: 0;
 }
 
@@ -121,6 +131,7 @@ const getStatusIcon = (msg: MessageItem) => {
 }
 
 .message-status {
-  color: var(--ru-color-brand-primary);
+  color: currentColor;
+  opacity: 0.95;
 }
 </style>

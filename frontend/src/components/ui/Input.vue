@@ -7,6 +7,7 @@
         :type="type"
         :value="modelValue"
         :placeholder="placeholder"
+        :autocomplete="autocomplete"
         :disabled="disabled"
         class="ru-input-field"
         @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
@@ -27,6 +28,7 @@ const props = withDefaults(defineProps<{
   label?: string;
   type?: 'text' | 'password' | 'email' | 'number' | 'tel';
   placeholder?: string;
+  autocomplete?: string;
   disabled?: boolean;
   error?: string;
   hint?: string;

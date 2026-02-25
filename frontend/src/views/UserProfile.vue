@@ -63,6 +63,7 @@ import { useDialogsStore } from '@/stores/dialogs';
 import type { UserSearchResultLocal } from '@/api/types';
 import { toast } from 'vue-sonner';
 import { TOAST_MESSAGES } from '@chatup/shared/src/protocol';
+import { notifyError } from '@/utils/errorHandler';
 
 const route = useRoute();
 const router = useRouter();
@@ -89,7 +90,7 @@ onMounted(async () => {
     const fetched = await trpc.profile.getById.query({ userId });
     user.value = { ...fetched, isBlocked: false };
   } catch {
-    toast.error(TOAST_MESSAGES.USER_NOT_LOADED_FOR_PROFILE);
+    notifyError(TOAST_MESSAGES.USER_NOT_LOADED_FOR_PROFILE);
   } finally {
     isLoading.value = false;
   }
@@ -102,6 +103,7 @@ const openChat = async () => {
     const dialog = await dialogsStore.getOrCreateDirectDialog(user.value.id);
     router.push(`/chat/${dialog.dialogId}`);
   } catch (error) {
+    notifyError(error);
     if (import.meta.env.DEV) console.debug('openChat failed', error);
   } finally {
     chatLoading.value = false;
@@ -122,6 +124,7 @@ const toggleBlock = async (block: boolean) => {
       toast.success(TOAST_MESSAGES.USER_UNBLOCKED);
     }
   } catch (error) {
+    notifyError(error);
     if (import.meta.env.DEV) console.debug('toggleBlock failed', error);
   } finally {
     blockLoading.value = false;

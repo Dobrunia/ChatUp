@@ -62,6 +62,25 @@ const router = createRouter({
   routes
 });
 
+const ROUTE_BACKGROUND_CLASSES = ['ru-bg-bogatyr2', 'ru-bg-kokoshnik', 'ru-bg-khokhloma'] as const;
+
+function resolveBackgroundClass(path: string): (typeof ROUTE_BACKGROUND_CLASSES)[number] {
+  if (path.startsWith('/chat') || path.startsWith('/chats')) {
+    return 'ru-bg-bogatyr2';
+  }
+  if (path.startsWith('/search') || path.startsWith('/user') || path.startsWith('/settings') || path.startsWith('/profile')) {
+    return 'ru-bg-khokhloma';
+  }
+  return 'ru-bg-kokoshnik';
+}
+
+function applyRouteBackground(path: string) {
+  if (typeof document === 'undefined') return;
+  const nextClass = resolveBackgroundClass(path);
+  document.body.classList.remove(...ROUTE_BACKGROUND_CLASSES);
+  document.body.classList.add(nextClass);
+}
+
 // Route Guards depending only on AuthStore session state
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
@@ -80,6 +99,10 @@ router.beforeEach((to, from, next) => {
   } else {
     next();
   }
+});
+
+router.afterEach((to) => {
+  applyRouteBackground(to.path);
 });
 
 export default router;

@@ -1,16 +1,17 @@
 import { w3cwebsocket as W3CWebSocket } from 'websocket';
 import { WS_EVENTS } from '@chatup/shared/src/protocol';
-import { useAuthStore } from '../stores/auth';
 import { useChatStore } from '../stores/chat';
+import { useDialogsStore } from '../stores/dialogs';
 import { config } from '../config';
 import type { MessageItem } from '../api/types';
 
 class WsClient {
   private client: W3CWebSocket | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private dialogsRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   
   public connect() {
-    if (this.client && this.client.readyState === W3CWebSocket.OPEN) {
+    if (this.client?.readyState === W3CWebSocket.OPEN) {
       return;
     }
 
@@ -56,29 +57,36 @@ class WsClient {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
     }
+    if (this.dialogsRefreshTimer) {
+      clearTimeout(this.dialogsRefreshTimer);
+      this.dialogsRefreshTimer = null;
+    }
   }
 
   private scheduleReconnect() {
-    if (!this.reconnectTimer) {
-      this.reconnectTimer = setTimeout(() => {
-        this.connect();
-      }, 5000);
-    }
+    this.reconnectTimer ??= setTimeout(() => {
+      this.connect();
+    }, 5000);
   }
 
   private handleEvent(payload: { type: string; data: unknown }) {
     const chatStore = useChatStore();
+    const dialogsStore = useDialogsStore();
     
     switch (payload.type) {
       case WS_EVENTS.SERVER.NEW_MESSAGE:
         chatStore.handleIncomingMessage(payload.data as MessageItem);
+        this.dialogsRefreshTimer ??= setTimeout(() => {
+          void dialogsStore.fetchDialogs().finally(() => {
+            this.dialogsRefreshTimer = null;
+          });
+        }, 150);
         break;
       case WS_EVENTS.SERVER.DELIVERED_RECEIPT:
-        // Receipt model — MVP: log only, message status tracked separately
-        console.log('Delivered receipt', payload.data);
+        chatStore.handleDeliveredReceipt(payload.data as { messageId?: string });
         break;
       case WS_EVENTS.SERVER.READ_RECEIPT:
-        console.log('Read receipt', payload.data);
+        chatStore.handleReadReceipt(payload.data as { messageId?: string });
         break;
       case WS_EVENTS.SERVER.TYPING:
         break;
