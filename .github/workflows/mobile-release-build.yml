@@ -170,17 +170,51 @@ jobs:
           name: ios-archive-${{ needs.check-release-version.outputs.current_version }}
           path: release-assets/ios
 
-      - name: Create GitHub release with mobile artifacts
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ needs.check-release-version.outputs.current_version }}
-          name: ChatUp v${{ needs.check-release-version.outputs.current_version }}
-          generate_release_notes: true
-          fail_on_unmatched_files: false
-          files: |
-            release-assets/android/**/*.apk
-            release-assets/android/**/*.aab
-            release-assets/ios/**/*
+      - name: Pack iOS archive into single file
+        if: needs.build-ios.result == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.check-release-version.outputs.current_version }}"
+          tar -czf "release-assets/ios/chatup-ios-${VERSION}.xcarchive.tgz" -C release-assets/ios .
+
+      - name: Create or update GitHub release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ needs.check-release-version.outputs.current_version }}"
+          TITLE="ChatUp ${TAG}"
+          NOTES="Automated mobile build for ${TAG}"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "$TITLE" --notes "$NOTES"
+          else
+            gh release create "$TAG" --title "$TITLE" --notes "$NOTES"
+          fi
+
+      - name: Upload release assets
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ needs.check-release-version.outputs.current_version }}"
+          VERSION="${{ needs.check-release-version.outputs.current_version }}"
+
+          shopt -s nullglob globstar
+          assets=(release-assets/android/**/*.apk release-assets/android/**/*.aab)
+          if [[ -f "release-assets/ios/chatup-ios-${VERSION}.xcarchive.tgz" ]]; then
+            assets+=("release-assets/ios/chatup-ios-${VERSION}.xcarchive.tgz")
+          fi
+
+          if [[ ${#assets[@]} -eq 0 ]]; then
+            echo "No release assets found."
+            exit 0
+          fi
+
+          gh release upload "$TAG" "${assets[@]}" --clobber
 
   release-build-skip-info:
     needs: check-release-version
