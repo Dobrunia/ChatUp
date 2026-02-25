@@ -1,8 +1,9 @@
 import { ref } from 'vue'
-import { searchUsers } from '../api/search-api'
+import { fetchRandomUsers, searchUsers } from '../api/search-api'
 import type { Profile } from '../types/chat'
 
 const results = ref<Profile[]>([])
+const randomUsers = ref<Profile[]>([])
 const searchLoading = ref(false)
 
 export function useSearch() {
@@ -19,5 +20,9 @@ export function useSearch() {
     }
   }
 
-  return { results, searchLoading, runSearch }
+  async function loadRandom(excludeUserId?: string): Promise<void> {
+    randomUsers.value = await fetchRandomUsers(2, excludeUserId)
+  }
+
+  return { results, randomUsers, searchLoading, runSearch, loadRandom }
 }

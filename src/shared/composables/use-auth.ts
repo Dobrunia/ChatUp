@@ -1,6 +1,8 @@
 import type { Session } from '@supabase/supabase-js'
 import { ref } from 'vue'
 import { restoreSession, signIn, signOut, signUp } from '../api/auth-api'
+import { saveInitialDisplayName } from '../api/profile-api'
+import { generateRandomDisplayName } from '../utils/random-display-name'
 
 const session = ref<Session | null>(null)
 const loading = ref(false)
@@ -36,8 +38,15 @@ export function useAuth() {
     loading.value = true
     errorMessage.value = null
     try {
-      await signUp(email, password)
+      const user = await signUp(email, password)
       session.value = await restoreSession()
+      if (session.value?.user.id === user.id) {
+        try {
+          await saveInitialDisplayName(user.id, generateRandomDisplayName())
+        } catch {
+          // Не блокируем регистрацию, если стартовое имя не сохранилось.
+        }
+      }
     } catch (error) {
       errorMessage.value = error instanceof Error ? error.message : 'Ошибка регистрации'
       throw error

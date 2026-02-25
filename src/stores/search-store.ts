@@ -8,9 +8,15 @@ export const useSearchStore = defineStore('search', () => {
     await search.runSearch(query)
   }
 
+  async function loadRandom(excludeUserId?: string): Promise<void> {
+    await search.loadRandom(excludeUserId)
+  }
+
   return {
     results: search.results,
+    randomUsers: search.randomUsers,
     loading: search.searchLoading,
     run,
+    loadRandom,
   }
 })

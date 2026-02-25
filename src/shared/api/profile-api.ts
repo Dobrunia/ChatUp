@@ -56,3 +56,13 @@ export async function upsertProfile(profile: Profile): Promise<void> {
     throw error
   }
 }
+
+export async function saveInitialDisplayName(userId: string, displayName: string): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ display_name: displayName })
+    .eq('id', userId)
+  if (error) {
+    throw error
+  }
+}

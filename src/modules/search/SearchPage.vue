@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-content class="ion-padding">
-      <div class="screen-center">
+      <div class="search-layout">
         <div class="card screen-card">
           <button class="btn btn-ghost" @click="router.back()">Назад</button>
           <div style="height: var(--space-2)" />
@@ -17,13 +17,24 @@
             </li>
           </ul>
         </div>
+
+        <div class="card screen-card" style="margin-top: var(--space-3)">
+          <h3 style="margin-top: 0">Случайные пользователи</h3>
+          <ul>
+            <li v-for="user in searchStore.randomUsers" :key="`random-${user.userId}`">
+              <button class="btn btn-ghost" @click="openChat(user.userId)">
+                {{ user.displayName || '@' + (user.username || '') }}
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonContent, IonPage } from '@ionic/vue'
 import { useSearchStore } from '../../stores/search-store'
@@ -36,6 +47,10 @@ const searchStore = useSearchStore()
 const sessionStore = useSessionStore()
 const conversationsStore = useConversationsStore()
 
+onMounted(async () => {
+  await searchStore.loadRandom(sessionStore.userId ?? undefined)
+})
+
 async function openChat(peerUserId: string): Promise<void> {
   if (!sessionStore.userId) {
     await router.replace('/auth')
@@ -45,3 +60,10 @@ async function openChat(peerUserId: string): Promise<void> {
   await router.push(`/chat/${conversationId}`)
 }
 </script>
+
+<style scoped>
+.search-layout {
+  width: min(100%, 480px);
+  margin: 0 auto;
+}
+</style>
