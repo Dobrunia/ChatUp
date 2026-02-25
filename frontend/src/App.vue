@@ -26,6 +26,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { IonApp, IonRouterOutlet } from '@ionic/vue'
 import { Toaster } from 'vue-sonner'
+import { Capacitor } from '@capacitor/core'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 import { config } from '@/config'
 
@@ -63,17 +64,45 @@ function getRepoPath(repoUrl: string): string {
     .replace(/\/+$/, '');
 }
 
+interface ReleaseAsset {
+  name?: string;
+  browser_download_url?: string;
+}
+
+interface LatestReleaseResponse {
+  tag_name?: string;
+  html_url?: string;
+  assets?: ReleaseAsset[];
+}
+
+function pickNativeUpdateUrl(data: LatestReleaseResponse, fallbackUrl: string): string {
+  const platform = Capacitor.getPlatform();
+  const assets = data.assets || [];
+  if (platform === 'android') {
+    const apkAsset = assets.find((asset) =>
+      (asset.name || '').toLowerCase().endsWith('.apk')
+    );
+    if (apkAsset?.browser_download_url) {
+      return apkAsset.browser_download_url;
+    }
+  }
+  return data.html_url || fallbackUrl;
+}
+
 onMounted(async () => {
   try {
     const repoPath = getRepoPath(config.app.githubRepo);
     if (!repoPath) return;
     const res = await fetch(`https://api.github.com/repos/${repoPath}/releases/latest`);
     if (!res.ok) return;
-    const data = (await res.json()) as { tag_name?: string; html_url?: string };
+    const data = (await res.json()) as LatestReleaseResponse;
     if (!data.tag_name) return;
     if (isVersionGreater(config.app.version, data.tag_name)) {
       needNativeUpdate.value = true;
-      releaseUrl.value = data.html_url || `${config.app.githubRepo.replace(/\/+$/, '')}/releases/latest`;
+      releaseUrl.value = pickNativeUpdateUrl(
+        data,
+        `${config.app.githubRepo.replace(/\/+$/, '')}/releases/latest`
+      );
     }
   } catch {
     // Ignore network/API errors: SW-based update banner still works.
