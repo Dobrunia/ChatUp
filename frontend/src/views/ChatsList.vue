@@ -38,7 +38,6 @@
             v-for="dialog in dialogsStore.dialogs" 
             :key="dialog.id"
             :title="dialog.title || 'Чат'"
-            :subtitle="dialog.lastMessage?.content || 'Нет сообщений'"
             truncateSubtitle
             clickable
             @click="$router.push(`/chat/${dialog.id}`)"
@@ -51,6 +50,22 @@
             </template>
             <template #trailingBottom v-if="dialog.unreadCount > 0">
               <Badge variant="primary" :text="dialog.unreadCount" />
+            </template>
+            <template #subtitle>
+              <span
+                class="dialog-subtitle"
+                :class="{
+                  'mine-unread': isLastMessageMine(dialog) && !isLastMessageReadByOthers(dialog),
+                  'mine-read': isLastMessageMine(dialog) && isLastMessageReadByOthers(dialog),
+                  incoming: !isLastMessageMine(dialog),
+                }"
+              >
+                {{
+                  dialog.lastMessage
+                    ? `${isLastMessageMine(dialog) ? 'Вы: ' : 'Вам: '}${dialog.lastMessage.content || ''}`
+                    : 'Нет сообщений'
+                }}
+              </span>
             </template>
           </ListItem>
         </div>
@@ -69,11 +84,16 @@ import Avatar from '@/components/ui/Avatar.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
 import { useDialogsStore } from '@/stores/dialogs';
+import { useProfileStore } from '@/stores/profile';
 
 const dialogsStore = useDialogsStore();
+const profileStore = useProfileStore();
 
 onMounted(() => {
   dialogsStore.fetchDialogs();
+  if (!profileStore.profile) {
+    profileStore.fetchProfile();
+  }
 });
 
 const handleRefresh = async (event: CustomEvent) => {
@@ -84,6 +104,18 @@ const handleRefresh = async (event: CustomEvent) => {
 const formatTime = (dateStr: string | Date) => {
   const d = new Date(dateStr);
   return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+};
+
+const isLastMessageMine = (dialog: {
+  lastMessage: null | { senderId?: string; readByOthers?: boolean | null };
+}) => {
+  return dialog.lastMessage?.senderId === profileStore.profile?.id;
+};
+
+const isLastMessageReadByOthers = (dialog: {
+  lastMessage: null | { senderId?: string; readByOthers?: boolean | null };
+}) => {
+  return dialog.lastMessage?.readByOthers === true;
 };
 </script>
 
@@ -129,5 +161,27 @@ const formatTime = (dateStr: string | Date) => {
   flex-direction: column;
   align-items: center;
   gap: var(--ru-spacing-16);
+}
+
+.dialog-subtitle {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dialog-subtitle.mine-unread {
+  color: var(--ru-color-semantic-error);
+  font-weight: 500;
+}
+
+.dialog-subtitle.mine-read {
+  color: var(--ru-color-text-secondary);
+  font-weight: 400;
+}
+
+.dialog-subtitle.incoming {
+  color: var(--ru-color-text-secondary);
 }
 </style>

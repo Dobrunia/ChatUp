@@ -83,6 +83,7 @@ export class DialogService {
     // Compute unread badges and sort by last message time
     const result = await Promise.all(dialogMembers.map(async (dm) => {
       const lastMessage = dm.dialog.messages[0] || null;
+      let lastMessageReadByOthers: boolean | null = null;
       const unreadCount = await prisma.message.count({
         where: {
           dialogId: dm.dialogId,
@@ -90,6 +91,18 @@ export class DialogService {
           ...(dm.lastReadAt ? { createdAt: { gt: dm.lastReadAt } } : {})
         }
       });
+
+      if (lastMessage?.senderId === userId) {
+        const readReceipt = await prisma.receipt.findFirst({
+          where: {
+            messageId: lastMessage.id,
+            userId: { not: userId },
+            readAt: { not: null },
+          },
+          select: { messageId: true },
+        });
+        lastMessageReadByOthers = !!readReceipt;
+      }
 
       const otherUser = dm.dialog.members[0]?.user;
 
@@ -99,8 +112,10 @@ export class DialogService {
         avatarUrl: otherUser?.avatarUrl || null,
         lastMessage: lastMessage ? {
           id: lastMessage.id,
+          senderId: lastMessage.senderId,
           content: lastMessage.content,
-          createdAt: lastMessage.createdAt
+          createdAt: lastMessage.createdAt,
+          readByOthers: lastMessageReadByOthers,
         } : null,
         unreadCount,
         updatedAt: lastMessage ? lastMessage.createdAt : dm.dialog.updatedAt

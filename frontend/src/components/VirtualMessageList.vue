@@ -100,8 +100,9 @@ const getStatusIcon = (msg: MessageItem) => {
 }
 
 .message-bubble.is-mine {
-  background-color: var(--ru-color-brand-primary);
-  color: var(--ru-color-text-inverse);
+  background-color: var(--ru-color-semantic-error-bg);
+  color: var(--ru-color-text-primary);
+  border-color: var(--ru-color-semantic-error);
   border-bottom-right-radius: 0;
 }
 

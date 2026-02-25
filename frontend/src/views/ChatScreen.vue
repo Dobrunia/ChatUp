@@ -66,7 +66,8 @@ const mediaStore = useMediaStore();
 
 const dialogId = route.params.dialogId as string;
 const messageText = ref('');
-const lastMarkedMessageId = ref<string | null>(null);
+const readMarkInFlight = ref(false);
+const markedIncomingIds = ref(new Set<string>());
 
 const dialogTitle = computed(() => {
   const d = dialogsStore.dialogs.find(x => x.id === dialogId);
@@ -81,28 +82,40 @@ onMounted(() => {
   }
 });
 
-const markLatestAsRead = async () => {
-  const latestMessage = chatStore.messages[0];
-  if (!latestMessage?.id) return;
-  if (latestMessage.id === lastMarkedMessageId.value) return;
-  if (!profileStore.profile?.id) return;
-  if (latestMessage.senderId === profileStore.profile.id) return;
+const markIncomingAsRead = async () => {
+  if (readMarkInFlight.value) return;
+  const profileId = profileStore.profile?.id;
+  if (!profileId) return;
+  const incomingIdsToMark = chatStore.messages
+    .filter((msg) => msg.id && msg.senderId !== profileId)
+    .map((msg) => msg.id as string)
+    .filter((id) => !markedIncomingIds.value.has(id));
+  if (incomingIdsToMark.length === 0) return;
 
+  readMarkInFlight.value = true;
   try {
-    await trpc.message.markRead.mutate({ dialogId, messageId: latestMessage.id });
-    lastMarkedMessageId.value = latestMessage.id;
+    await Promise.all(
+      incomingIdsToMark.map((messageId) =>
+        trpc.message.markRead.mutate({ dialogId, messageId })
+      )
+    );
+    for (const id of incomingIdsToMark) {
+      markedIncomingIds.value.add(id);
+    }
     await dialogsStore.fetchDialogs();
   } catch (error) {
     if (import.meta.env.DEV) {
-      console.debug('markLatestAsRead failed', error);
+      console.debug('markIncomingAsRead failed', error);
     }
+  } finally {
+    readMarkInFlight.value = false;
   }
 };
 
 watch(
-  () => chatStore.messages[0]?.id,
+  () => chatStore.messages.map((m) => m.id || m.clientMessageId).join('|'),
   () => {
-    void markLatestAsRead();
+    void markIncomingAsRead();
   },
   { immediate: true }
 );
