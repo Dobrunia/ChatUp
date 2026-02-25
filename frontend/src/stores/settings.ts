@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
 export const useSettingsStore = defineStore('settings', () => {
-  const notificationsEnabled = ref(true);
+  const notificationsEnabled = ref(false);
   const darkModeEnabled = ref(false); // Can check window.matchMedia('(prefers-color-scheme: dark)')
 
   const toggleNotifications = (val: boolean) => {

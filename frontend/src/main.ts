@@ -35,6 +35,18 @@ app.use(pinia)
 app.use(router) // Router must be used after pinia is initialized so guards can use stores
 
 if (globalThis.window !== undefined) {
+  const hasRouterBackEntry = () => Boolean(globalThis.history.state?.back);
+  const goBackOrFallback = async () => {
+    if (hasRouterBackEntry()) {
+      await router.back();
+      return;
+    }
+    const fallbackPath = localStorage.getItem('token') ? '/chats' : '/welcome';
+    if (router.currentRoute.value.path !== fallbackPath) {
+      await router.replace(fallbackPath);
+    }
+  };
+
   globalThis.window.addEventListener('unhandledrejection', (event) => {
     handleGlobalError(event.reason);
     event.preventDefault();
@@ -68,8 +80,8 @@ if (globalThis.window !== undefined) {
       const deltaY = Math.abs(touch.clientY - edgeSwipeStartY);
       const startedFromLeftEdge = edgeSwipeStartX <= 24;
       const isHorizontalBackSwipe = deltaX >= 70 && deltaY <= 36;
-      if (startedFromLeftEdge && isHorizontalBackSwipe && globalThis.history.length > 1) {
-        void router.back();
+      if (startedFromLeftEdge && isHorizontalBackSwipe) {
+        void goBackOrFallback();
       }
     },
     { passive: true }
@@ -79,12 +91,8 @@ if (globalThis.window !== undefined) {
     const ionEvent = event as Event & {
       detail?: { register: (priority: number, handler: () => void) => void };
     };
-    ionEvent.detail?.register(0, () => {
-      if (globalThis.history.length > 1) {
-        void router.back();
-      } else if (router.currentRoute.value.path !== '/chats') {
-        void router.replace('/chats');
-      }
+    ionEvent.detail?.register(10, () => {
+      void goBackOrFallback();
     });
   });
 }

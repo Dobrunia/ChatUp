@@ -3,6 +3,7 @@ import { config } from '../../config';
 import { prisma } from '../../db/prisma';
 import { ServiceAccount, cert, getApp, getApps, initializeApp } from 'firebase-admin/app';
 import { getMessaging } from 'firebase-admin/messaging';
+import { logger } from '../../utils/logger';
 
 type WebPushSubscription = {
   endpoint: string;
@@ -38,16 +39,30 @@ class PushServiceClass {
       ? Buffer.from(config.firebase.serviceAccountBase64, 'base64').toString('utf8')
       : '';
     const rawJson = config.firebase.serviceAccountJson || fromBase64;
-    if (!rawJson) return;
+    if (!rawJson) {
+      logger.warn({ event: 'Firebase push disabled: service account is not configured' });
+      return;
+    }
 
     try {
-      const parsed = JSON.parse(rawJson) as ServiceAccount;
+      const parsed = JSON.parse(rawJson) as
+        | (ServiceAccount & { project_id?: string; client_email?: string; private_key?: string })
+        | undefined;
       const serviceAccount: ServiceAccount = {
-        projectId: parsed.projectId,
-        clientEmail: parsed.clientEmail,
-        privateKey: parsed.privateKey?.split(String.raw`\n`).join('\n'),
+        projectId: parsed?.projectId || parsed?.project_id,
+        clientEmail: parsed?.clientEmail || parsed?.client_email,
+        privateKey: (parsed?.privateKey || parsed?.private_key)?.split(String.raw`\n`).join('\n'),
       };
       if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
+        logger.error(
+          { event: 'Firebase push disabled: invalid service account payload' },
+          undefined,
+          {
+            hasProjectId: Boolean(serviceAccount.projectId),
+            hasClientEmail: Boolean(serviceAccount.clientEmail),
+            hasPrivateKey: Boolean(serviceAccount.privateKey),
+          }
+        );
         return;
       }
 
@@ -59,8 +74,10 @@ class PushServiceClass {
         getApp();
       }
       this.firebaseConfigured = true;
-    } catch {
+      logger.success({ event: 'Firebase push configured successfully', projectId: serviceAccount.projectId });
+    } catch (error) {
       this.firebaseConfigured = false;
+      logger.error({ event: 'Firebase push initialization failed' }, error);
     }
   }
 
