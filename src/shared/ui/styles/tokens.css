@@ -7,6 +7,7 @@
   --color-muted: hsl(20 16% 34%);
   --color-primary: hsl(7 73% 44%);
   --color-danger: hsl(1 75% 45%);
+  --color-success: hsl(145 63% 38%);
   --color-border: hsl(39 58% 61% / 70%);
   --app-bg-image: url('/assets/1.webp');
   --chat-bg-image: url('/assets/2.webp');
@@ -32,6 +33,7 @@
     --color-muted: hsl(214 20% 70%);
     --color-primary: hsl(197 83% 62%);
     --color-danger: hsl(355 80% 63%);
+    --color-success: hsl(152 60% 48%);
     --color-border: hsl(203 39% 37% / 70%);
     --app-bg-image: url('/assets/3.webp');
     --chat-bg-image: url('/assets/2.webp');
@@ -48,6 +50,7 @@
   --color-muted: hsl(20 16% 34%);
   --color-primary: hsl(7 73% 44%);
   --color-danger: hsl(1 75% 45%);
+  --color-success: hsl(145 63% 38%);
   --color-border: hsl(39 58% 61% / 70%);
   --app-bg-image: url('/assets/1.webp');
   --chat-bg-image: url('/assets/2.webp');
@@ -63,6 +66,7 @@
   --color-muted: hsl(214 20% 70%);
   --color-primary: hsl(197 83% 62%);
   --color-danger: hsl(355 80% 63%);
+  --color-success: hsl(152 60% 48%);
   --color-border: hsl(203 39% 37% / 70%);
   --app-bg-image: url('/assets/3.webp');
   --chat-bg-image: url('/assets/2.webp');

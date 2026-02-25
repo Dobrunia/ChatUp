@@ -56,8 +56,13 @@ export function useAuth() {
   }
 
   async function logout(): Promise<void> {
-    await signOut()
-    session.value = null
+    try {
+      await signOut()
+    } catch (error) {
+      errorMessage.value = error instanceof Error ? error.message : 'Ошибка выхода'
+    } finally {
+      session.value = null
+    }
   }
 
   return { session, loading, errorMessage, bootSession, login, register, logout }

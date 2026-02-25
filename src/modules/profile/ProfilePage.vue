@@ -19,6 +19,7 @@
             <input :checked="isDarkTheme" type="checkbox" @change="toggleTheme" />
             Темная тема
           </label>
+          <p v-if="actionError">{{ actionError }}</p>
           <div style="height: var(--space-3)" />
           <div style="display: flex; gap: var(--space-2)">
             <button class="btn btn-primary" @click="save">Сохранить</button>
@@ -49,6 +50,7 @@ const displayName = ref('')
 const avatarUrl = ref('')
 const notificationsEnabled = ref(true)
 const isDarkTheme = computed(() => theme.themeMode.value === 'dark')
+const actionError = ref<string | null>(null)
 
 watchEffect(() => {
   const profile = profileStore.profile
@@ -65,18 +67,28 @@ async function save(): Promise<void> {
   if (!sessionStore.userId) {
     return
   }
-  await profileStore.save({
-    userId: sessionStore.userId,
-    username: username.value || null,
-    displayName: displayName.value || null,
-    avatarUrl: avatarUrl.value || null,
-    notificationsEnabled: notificationsEnabled.value,
-  })
+  try {
+    actionError.value = null
+    await profileStore.save({
+      userId: sessionStore.userId,
+      username: username.value || null,
+      displayName: displayName.value || null,
+      avatarUrl: avatarUrl.value || null,
+      notificationsEnabled: notificationsEnabled.value,
+    })
+  } catch (error) {
+    actionError.value = error instanceof Error ? error.message : 'Не удалось сохранить профиль'
+  }
 }
 
 async function logout(): Promise<void> {
-  await sessionStore.logout()
-  await router.replace('/auth')
+  try {
+    actionError.value = null
+    await sessionStore.logout()
+    await router.replace('/auth')
+  } catch (error) {
+    actionError.value = error instanceof Error ? error.message : 'Не удалось выйти из аккаунта'
+  }
 }
 
 async function toggleTheme(): Promise<void> {

@@ -7,21 +7,25 @@ interface MessageRow {
   sender_id: string
   type: MessageType
   body: string | null
-  media_url: string | null
-  media_size: number | null
-  media_duration: number | null
+  media: {
+    url?: string
+    type?: MessageType
+    size?: number
+    duration?: number
+  } | null
+  client_id: string
   created_at: string
 }
 
 function normalizeMedia(row: MessageRow): MediaMeta | null {
-  if (!row.media_url || row.media_size === null) {
+  if (!row.media?.url || row.media.size === undefined) {
     return null
   }
   return {
-    url: row.media_url,
-    type: row.type,
-    size: row.media_size,
-    duration: row.media_duration ?? undefined,
+    url: row.media.url,
+    type: row.media.type ?? row.type,
+    size: row.media.size,
+    duration: row.media.duration,
   }
 }
 
@@ -41,17 +45,14 @@ function normalizeMessage(row: MessageRow): Message {
 export async function fetchMessages(conversationId: string, limit = 30): Promise<Message[]> {
   const { data, error } = await supabase
     .from('messages')
-    .select(
-      'id,conversation_id,sender_id,type,body,media_url,media_size,media_duration,created_at',
-    )
+    .select('id,conversation_id,sender_id,type,body,media,client_id,created_at')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .limit(limit)
-    .returns<MessageRow[]>()
   if (error) {
     throw error
   }
-  return data.reverse().map(normalizeMessage)
+  return (data as MessageRow[]).reverse().map(normalizeMessage)
 }
 
 export async function insertMessage(message: Message): Promise<Message> {
@@ -62,11 +63,17 @@ export async function insertMessage(message: Message): Promise<Message> {
       sender_id: message.senderId,
       type: message.type,
       body: message.body,
-      media_url: message.media?.url ?? null,
-      media_size: message.media?.size ?? null,
-      media_duration: message.media?.duration ?? null,
+      media: message.media
+        ? {
+            url: message.media.url,
+            type: message.media.type,
+            size: message.media.size,
+            duration: message.media.duration,
+          }
+        : null,
+      client_id: message.id,
     })
-    .select('id,conversation_id,sender_id,type,body,media_url,media_size,media_duration,created_at')
+    .select('id,conversation_id,sender_id,type,body,media,client_id,created_at')
     .single<MessageRow>()
   if (error) {
     throw error
