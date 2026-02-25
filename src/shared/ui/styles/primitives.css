@@ -66,6 +66,24 @@ body {
   color: var(--color-bg);
 }
 
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.icon-btn-ghost {
+  background: var(--color-surface);
+  color: var(--color-surface-text);
+  border-color: var(--color-border);
+}
+
 .input,
 .textarea {
   width: 100%;

@@ -294,12 +294,17 @@ using (user_id = auth.uid())
 with check (user_id = auth.uid());
 
 -- Разрешаем вставку members при создании диалога (клиентом)
-drop policy if exists "members_insert_auth" on public.conversation_members;
-create policy "members_insert_auth"
+create policy "members_insert_if_member_or_self"
 on public.conversation_members
 for insert
 to authenticated
-with check (true);
+with check (
+  user_id = auth.uid()
+  or exists (
+    select 1 from public.conversation_members cm
+    where cm.conversation_id = conversation_id and cm.user_id = auth.uid()
+  )
+);
 
 -- MESSAGES: читать/писать могут только участники беседы, sender_id должен быть текущим юзером
 drop policy if exists "messages_select_member" on public.messages;
