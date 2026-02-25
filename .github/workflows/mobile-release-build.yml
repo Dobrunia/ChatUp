@@ -1,0 +1,159 @@
+name: Mobile Release Build
+
+on:
+  push:
+    branches:
+      - release
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-release-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version_changed: ${{ steps.version.outputs.changed }}
+      current_version: ${{ steps.version.outputs.current }}
+      previous_version: ${{ steps.version.outputs.previous }}
+      android_exists: ${{ steps.platforms.outputs.android_exists }}
+      ios_exists: ${{ steps.platforms.outputs.ios_exists }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check frontend version change
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          CURRENT_VERSION="$(node -p "require('./frontend/package.json').version")"
+          PREVIOUS_VERSION=""
+
+          if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            if git show HEAD^:frontend/package.json >/tmp/prev_frontend_package.json 2>/dev/null; then
+              PREVIOUS_VERSION="$(node -p "require('/tmp/prev_frontend_package.json').version || ''")"
+            fi
+          fi
+
+          if [[ -n "$PREVIOUS_VERSION" && "$CURRENT_VERSION" == "$PREVIOUS_VERSION" ]]; then
+            CHANGED="false"
+          else
+            CHANGED="true"
+          fi
+
+          echo "current=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "previous=$PREVIOUS_VERSION" >> "$GITHUB_OUTPUT"
+          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
+
+      - name: Detect mobile platform projects
+        id: platforms
+        shell: bash
+        run: |
+          set -euo pipefail
+          ANDROID_EXISTS="false"
+          IOS_EXISTS="false"
+
+          if [[ -d "android" || -d "frontend/android" ]]; then
+            ANDROID_EXISTS="true"
+          fi
+          if [[ -d "ios" || -d "frontend/ios" ]]; then
+            IOS_EXISTS="true"
+          fi
+
+          echo "android_exists=$ANDROID_EXISTS" >> "$GITHUB_OUTPUT"
+          echo "ios_exists=$IOS_EXISTS" >> "$GITHUB_OUTPUT"
+
+  build-android:
+    needs: check-release-version
+    if: needs.check-release-version.outputs.version_changed == 'true' && needs.check-release-version.outputs.android_exists == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build -w frontend
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Build Android release artifact
+        run: |
+          cd android
+          ./gradlew assembleRelease
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-${{ needs.check-release-version.outputs.current_version }}
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: warn
+
+  build-ios:
+    needs: check-release-version
+    if: needs.check-release-version.outputs.version_changed == 'true' && needs.check-release-version.outputs.ios_exists == 'true'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build -w frontend
+
+      - name: Sync Capacitor iOS project
+        run: npx cap sync ios
+
+      - name: Build iOS archive (unsigned)
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath ios/build/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+
+      - name: Upload iOS archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-archive-${{ needs.check-release-version.outputs.current_version }}
+          path: ios/build/App.xcarchive
+          if-no-files-found: warn
+
+  release-build-skip-info:
+    needs: check-release-version
+    if: needs.check-release-version.outputs.version_changed != 'true' || (needs.check-release-version.outputs.android_exists != 'true' && needs.check-release-version.outputs.ios_exists != 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain skip reason
+        run: |
+          echo "Frontend version changed: ${{ needs.check-release-version.outputs.version_changed }}"
+          echo "Current version: ${{ needs.check-release-version.outputs.current_version }}"
+          echo "Previous version: ${{ needs.check-release-version.outputs.previous_version }}"
+          echo "Android project exists: ${{ needs.check-release-version.outputs.android_exists }}"
+          echo "iOS project exists: ${{ needs.check-release-version.outputs.ios_exists }}"
+          echo "Mobile build jobs skipped."
