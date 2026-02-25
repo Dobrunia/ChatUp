@@ -13,7 +13,7 @@
     "dev:backend": "npm run dev -w backend",
     "dev:full": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",  
     "clean": "npm run clean -w shared --if-present && npm run clean -w backend --if-present && npm run clean -w frontend --if-present",
-    "build": "npm run build -w shared && npm run build -w backend && npm run build -w frontend",
+    "build": "npm run build -w shared && npm run build -w backend && npm run build -w frontend && npm run sync:mobile -w frontend",
     "test:backend": "npm run test -w backend",
     "lint": "npm run lint --workspaces --if-present"
   }
