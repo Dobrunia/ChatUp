@@ -156,6 +156,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download Android artifacts
         if: needs.build-android.result == 'success'
         uses: actions/download-artifact@v4
@@ -176,7 +181,31 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ needs.check-release-version.outputs.current_version }}"
-          tar -czf "release-assets/ios/chatup-ios-${VERSION}.xcarchive.tgz" -C release-assets/ios .
+          mkdir -p release-assets/ios-packed
+          (cd release-assets/ios && zip -r "../ios-packed/chatup-ios-${VERSION}.xcarchive.zip" .)
+
+      - name: Create release manifest (for in-app update checks)
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.check-release-version.outputs.current_version }}"
+          TAG="v${VERSION}"
+          SHA="${{ github.sha }}"
+          DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+          mkdir -p release-assets/meta
+
+          cat > release-assets/meta/release.json <<EOF
+          {
+            "app": "ChatUp",
+            "version": "${VERSION}",
+            "tag": "${TAG}",
+            "commit": "${SHA}",
+            "publishedAt": "${DATE}"
+          }
+          EOF
+
+          echo "${VERSION}" > release-assets/meta/version.txt
 
       - name: Create or update GitHub release
         shell: bash
@@ -205,9 +234,12 @@ jobs:
 
           shopt -s nullglob globstar
           assets=(release-assets/android/**/*.apk release-assets/android/**/*.aab)
-          if [[ -f "release-assets/ios/chatup-ios-${VERSION}.xcarchive.tgz" ]]; then
-            assets+=("release-assets/ios/chatup-ios-${VERSION}.xcarchive.tgz")
+
+          if [[ -f "release-assets/ios-packed/chatup-ios-${VERSION}.xcarchive.zip" ]]; then
+            assets+=("release-assets/ios-packed/chatup-ios-${VERSION}.xcarchive.zip")
           fi
+
+          assets+=("release-assets/meta/release.json" "release-assets/meta/version.txt")
 
           if [[ ${#assets[@]} -eq 0 ]]; then
             echo "No release assets found."
