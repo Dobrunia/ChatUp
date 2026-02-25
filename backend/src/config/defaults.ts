@@ -23,5 +23,9 @@ export const defaults = {
     publicKey: '',
     privateKey: '',
     subject: 'mailto:dev@chatup.local',
+  },
+  firebase: {
+    serviceAccountJson: '',
+    serviceAccountBase64: '',
   }
 };

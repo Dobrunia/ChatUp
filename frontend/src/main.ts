@@ -5,6 +5,7 @@ import App from './App.vue'
 import router from './router'
 import { wsClient } from './ws/client'
 import { handleGlobalError } from './utils/errorHandler'
+import { useAuthStore } from './stores/auth'
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/vue/css/core.css';
@@ -44,17 +45,57 @@ if (globalThis.window !== undefined) {
       handleGlobalError(event.error);
     }
   });
+
+  let edgeSwipeStartX = 0;
+  let edgeSwipeStartY = 0;
+  globalThis.window.addEventListener(
+    'touchstart',
+    (event) => {
+      const touch = event.changedTouches?.[0];
+      if (!touch) return;
+      edgeSwipeStartX = touch.clientX;
+      edgeSwipeStartY = touch.clientY;
+    },
+    { passive: true }
+  );
+
+  globalThis.window.addEventListener(
+    'touchend',
+    (event) => {
+      const touch = event.changedTouches?.[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - edgeSwipeStartX;
+      const deltaY = Math.abs(touch.clientY - edgeSwipeStartY);
+      const startedFromLeftEdge = edgeSwipeStartX <= 24;
+      const isHorizontalBackSwipe = deltaX >= 70 && deltaY <= 36;
+      if (startedFromLeftEdge && isHorizontalBackSwipe && globalThis.history.length > 1) {
+        void router.back();
+      }
+    },
+    { passive: true }
+  );
+
+  document.addEventListener('ionBackButton', (event: Event) => {
+    const ionEvent = event as Event & {
+      detail?: { register: (priority: number, handler: () => void) => void };
+    };
+    ionEvent.detail?.register(0, () => {
+      if (globalThis.history.length > 1) {
+        void router.back();
+      } else if (router.currentRoute.value.path !== '/chats') {
+        void router.replace('/chats');
+      }
+    });
+  });
 }
 
 async function bootstrapClientApp() {
   await router.isReady();
+  const authStore = useAuthStore();
+  authStore.initSession();
   app.mount('#app')
 
-  // Watch for auth changes to connect/disconnect WS
-  const authStore = pinia.state.value.auth;
-  if (authStore?.isAuthenticated) {
-    wsClient.connect();
-  }
+  if (authStore.isAuthenticated) wsClient.connect();
 
   // Init resilience layer
   import('./services/resilience.service').then(({ resilienceService }) => {

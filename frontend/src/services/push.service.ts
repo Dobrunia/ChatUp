@@ -15,6 +15,9 @@ export type PushInitResult =
   | { ok: false; reason: PushInitFailureReason };
 
 export class PushService {
+  private readonly nativeTokenStorageKey = 'native.push.token';
+  private nativeListenersAttached = false;
+
   private base64UrlToUint8Array(base64Url: string): Uint8Array {
     const padding = '='.repeat((4 - base64Url.length % 4) % 4);
     const base64 = (base64Url + padding).replaceAll('-', '+').replaceAll('_', '/');
@@ -81,6 +84,7 @@ export class PushService {
     }
 
     try {
+      this.registerListeners();
       let permStatus = await PushNotifications.checkPermissions();
 
       if (permStatus.receive === 'prompt') {
@@ -100,10 +104,19 @@ export class PushService {
   }
 
   public registerListeners() {
-    if (Capacitor.getPlatform() === 'web') return;
+    if (Capacitor.getPlatform() === 'web' || this.nativeListenersAttached) return;
+    this.nativeListenersAttached = true;
 
-    PushNotifications.addListener('registration', (token) => {
-      console.log('Push registration success, token: ' + token.value);
+    PushNotifications.addListener('registration', async (token) => {
+      localStorage.setItem(this.nativeTokenStorageKey, token.value);
+      try {
+        await trpc.push.registerNativeToken.mutate({
+          token: token.value,
+          platform: Capacitor.getPlatform(),
+        });
+      } catch (error) {
+        console.error('Failed to register native push token on backend', error);
+      }
     });
 
     PushNotifications.addListener('registrationError', (error: any) => {
@@ -117,6 +130,34 @@ export class PushService {
     PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
       console.log('Push action performed: ', notification);
     });
+  }
+
+  public async disablePush(): Promise<void> {
+    if (Capacitor.getPlatform() === 'web') {
+      if (!('serviceWorker' in navigator)) return;
+      const registration = await navigator.serviceWorker.getRegistration();
+      const subscription = await registration?.pushManager.getSubscription();
+      if (subscription) {
+        const endpoint = subscription.endpoint;
+        await subscription.unsubscribe();
+        try {
+          await trpc.push.unregisterWebSubscription.mutate({ endpoint });
+        } catch (error) {
+          console.error('Failed to unregister web push subscription', error);
+        }
+      }
+      return;
+    }
+
+    const token = localStorage.getItem(this.nativeTokenStorageKey);
+    if (!token) return;
+    try {
+      await trpc.push.unregisterNativeToken.mutate({ token });
+    } catch (error) {
+      console.error('Failed to unregister native push token', error);
+    } finally {
+      localStorage.removeItem(this.nativeTokenStorageKey);
+    }
   }
 }
 
