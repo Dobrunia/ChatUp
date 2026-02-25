@@ -1,7 +1,7 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
-import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
+import { ERROR_MESSAGES } from '@chatup/shared';
 import { verifyAccessToken } from '../auth/jwt';
 import { logger } from '../utils/logger';
 

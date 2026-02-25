@@ -62,7 +62,7 @@ import { useSearchStore } from '@/stores/search';
 import { useDialogsStore } from '@/stores/dialogs';
 import type { UserSearchResultLocal } from '@/api/types';
 import { toast } from 'vue-sonner';
-import { TOAST_MESSAGES } from '@chatup/shared/src/protocol';
+import { TOAST_MESSAGES } from '@chatup/shared';
 import { notifyError } from '@/utils/errorHandler';
 
 const route = useRoute();

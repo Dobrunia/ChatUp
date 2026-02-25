@@ -1,6 +1,6 @@
 import { prisma } from '../../db/prisma';
 import { TRPCError } from '@trpc/server';
-import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
+import { ERROR_MESSAGES } from '@chatup/shared';
 import { SearchService } from './search.service';
 
 export class DialogService {

@@ -1,5 +1,5 @@
 import { w3cwebsocket as W3CWebSocket } from 'websocket';
-import { WS_EVENTS } from '@chatup/shared/src/protocol';
+import { WS_EVENTS } from '@chatup/shared';
 import { useChatStore } from '../stores/chat';
 import { useDialogsStore } from '../stores/dialogs';
 import { config } from '../config';

@@ -3,6 +3,18 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./src/index.ts",
+      "require": "./dist/index.js"
+    },
+    "./protocol": {
+      "types": "./dist/protocol/index.d.ts",
+      "import": "./src/protocol/index.ts",
+      "require": "./dist/protocol/index.js"
+    }
+  },
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{ recursive: true, force: true })\"",
     "build": "npm run clean && tsc -p tsconfig.json",

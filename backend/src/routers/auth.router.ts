@@ -11,7 +11,7 @@ import {
   USERNAME_VALIDATION_MESSAGE,
   isValidUsername,
   normalizeUsername,
-} from '@chatup/shared/src/protocol';
+} from '@chatup/shared';
 
 function getIp(req: any): string {
   const forwarded = req.headers['x-forwarded-for'];

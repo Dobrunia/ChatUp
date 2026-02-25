@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { ProfileService } from '../domain/services/profile.service';
 import { rateLimit } from '../middlewares/rateLimit';
 import { RATE_LIMITS } from '../config/constants';
-import { USERNAME_VALIDATION_MESSAGE, isValidUsername, normalizeUsername } from '@chatup/shared/src/protocol';
+import { USERNAME_VALIDATION_MESSAGE, isValidUsername, normalizeUsername } from '@chatup/shared';
 
 export const profileRouter = router({
   me: protectedProcedure.query(async ({ ctx }) => {

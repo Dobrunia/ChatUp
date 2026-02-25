@@ -84,7 +84,7 @@ import {
   isRateLimitError,
   isValidUsername,
   normalizeUsername,
-} from '@chatup/shared/src/protocol';
+} from '@chatup/shared';
 import { extractUserErrorMessage, notifyError } from '@/utils/errorHandler';
 
 const profileStore = useProfileStore();

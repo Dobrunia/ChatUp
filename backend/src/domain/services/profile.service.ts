@@ -1,6 +1,6 @@
 import { prisma } from '../../db/prisma';
 import { TRPCError } from '@trpc/server';
-import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
+import { ERROR_MESSAGES } from '@chatup/shared';
 
 export class ProfileService {
   static async getProfile(userId: string) {

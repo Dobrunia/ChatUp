@@ -1,5 +1,5 @@
 import { toast } from 'vue-sonner';
-import { ERROR_MESSAGES, TRPC_CODE_MESSAGES } from '@chatup/shared/src/protocol';
+import { ERROR_MESSAGES, TRPC_CODE_MESSAGES } from '@chatup/shared';
 
 /**
  * Maps raw backend TRPC error codes to user-friendly messages.

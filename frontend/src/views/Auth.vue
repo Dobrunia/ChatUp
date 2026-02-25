@@ -137,7 +137,7 @@ import {
   isValidUsername,
   isValidPasswordLength,
   normalizeUsername,
-} from '@chatup/shared/src/protocol';
+} from '@chatup/shared';
 
 const router = useRouter();
 const authStore = useAuthStore();

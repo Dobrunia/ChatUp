@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { ERROR_MESSAGES } from '@chatup/shared/src/protocol';
+import { ERROR_MESSAGES } from '@chatup/shared';
 
 const memoryStore = new Map<string, { count: number; resetAt: number }>();
 
