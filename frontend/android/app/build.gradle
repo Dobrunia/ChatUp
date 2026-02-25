@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+def keystorePath = System.getenv("KEYSTORE_FILE")
+def keystorePassword = System.getenv("KEYSTORE_PASSWORD")
+def keyAliasEnv = System.getenv("KEY_ALIAS")
+def keyPasswordEnv = System.getenv("KEY_PASSWORD")
+def hasReleaseSigning = keystorePath && keystorePassword && keyAliasEnv && keyPasswordEnv && file(keystorePath).exists()
+
 android {
     namespace "com.chatup.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -18,8 +24,23 @@ android {
     }
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.warn("Release signing config is missing. APK/AAB may be invalid for installation.")
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias keyAliasEnv
+                keyPassword keyPasswordEnv
+            }
         }
     }
 }
