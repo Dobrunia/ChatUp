@@ -80,6 +80,12 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Install dependencies
         run: npm ci
 
@@ -90,10 +96,49 @@ jobs:
         run: npx cap sync android
         working-directory: frontend
 
+      - name: Validate Android signing secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in KEYSTORE_FILE KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::Missing required secret: $name"
+              missing=1
+            fi
+          done
+          if [[ "$missing" -ne 0 ]]; then
+            exit 1
+          fi
+        env:
+          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Decode Android release keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > frontend/android/chatup-release.keystore
+
       - name: Build Android release artifact
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/frontend/android/chatup-release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           cd frontend/android
-          bash ./gradlew assembleRelease
+          ./gradlew assembleRelease
+
+      - name: Verify Android APK signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=$(ls frontend/android/app/build/outputs/apk/release/*.apk | head -n 1)
+          echo "APK: $APK"
+          jarsigner -verify -verbose -certs "$APK" | tail -n 30
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
