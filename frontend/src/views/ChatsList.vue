@@ -77,7 +77,7 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
-import { IonPage, IonContent, IonRefresher, IonRefresherContent } from '@ionic/vue';
+import { IonPage, IonContent, IonRefresher, IonRefresherContent, onIonViewWillEnter } from '@ionic/vue';
 import Header from '@/components/ui/Header.vue';
 import ListItem from '@/components/ui/ListItem.vue';
 import Avatar from '@/components/ui/Avatar.vue';
@@ -94,6 +94,10 @@ onMounted(() => {
   if (!profileStore.profile) {
     profileStore.fetchProfile();
   }
+});
+
+onIonViewWillEnter(async () => {
+  await dialogsStore.fetchDialogs();
 });
 
 const handleRefresh = async (event: CustomEvent) => {

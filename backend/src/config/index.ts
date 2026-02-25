@@ -24,7 +24,8 @@ loadEnvFiles();
 
 import { defaults } from './defaults';
 
-const isDev = (process.env.NODE_ENV || defaults.env) === 'development';
+const nodeEnv = process.env.NODE_ENV;
+const useDefaultsOnly = nodeEnv === 'development';
 
 function firstDefinedEnv(keys: string[]): string | undefined {
   for (const key of keys) {
@@ -35,6 +36,11 @@ function firstDefinedEnv(keys: string[]): string | undefined {
 }
 
 function getEnv(key: string, fallback?: string, aliases: string[] = []): string {
+  if (useDefaultsOnly) {
+    if (fallback !== undefined) return fallback;
+    throw new Error(`Missing required ENV variable: ${key}`);
+  }
+
   const value = firstDefinedEnv([key, ...aliases]);
   if (!value) {
     if (fallback !== undefined) {
@@ -47,25 +53,24 @@ function getEnv(key: string, fallback?: string, aliases: string[] = []): string 
 }
 
 function getOptionalEnv(key: string, fallback = ''): string {
+  if (useDefaultsOnly) return fallback;
+
   const value = process.env[key];
   if (value !== undefined) return value;
-  if (isDev) return fallback;
   return '';
 }
 
 /** Secrets: fallback allowed ONLY in development; production throws immediately */
 function getSecretEnv(key: string, devFallback: string, aliases: string[] = []): string {
+  if (useDefaultsOnly) return devFallback;
+
   const value = firstDefinedEnv([key, ...aliases]);
   if (value) return value;
-  if (isDev) {
-    console.warn(`[CONFIG WARNING] Missing secret ${key}, using dev fallback. NEVER do this in production.`);
-    return devFallback;
-  }
   throw new Error(`Missing required secret ENV variable: ${key}. Refusing to start in ${process.env.NODE_ENV} mode.`);
 }
 
 export const config = {
-  env: getEnv('NODE_ENV', defaults.env, ['APP_ENV']),
+  env: useDefaultsOnly ? defaults.env : getEnv('NODE_ENV', defaults.env, ['APP_ENV']),
   port: Number.parseInt(getEnv('PORT', defaults.port.toString(), ['APP_PORT']), 10),
   db: {
     url: getEnv('DATABASE_URL', defaults.db.url, ['DB_CONNECTION_STRING']),
@@ -87,5 +92,9 @@ export const config = {
     publicKey: getOptionalEnv('WEB_PUSH_PUBLIC_KEY', defaults.webPush.publicKey),
     privateKey: getOptionalEnv('WEB_PUSH_PRIVATE_KEY', defaults.webPush.privateKey),
     subject: getOptionalEnv('WEB_PUSH_SUBJECT', defaults.webPush.subject),
+  },
+  firebase: {
+    serviceAccountJson: getOptionalEnv('FIREBASE_SERVICE_ACCOUNT_JSON', defaults.firebase.serviceAccountJson),
+    serviceAccountBase64: getOptionalEnv('FIREBASE_SERVICE_ACCOUNT_BASE64', defaults.firebase.serviceAccountBase64),
   }
 };

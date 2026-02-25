@@ -5,9 +5,11 @@ import type { AppRouter } from '../../../backend/src/routers';
 import { handleGlobalError } from '../utils/errorHandler';
 import { config } from '../config';
 import { db } from '../db';
+import { wsClient } from '../ws/client';
 
 const REFRESH_TOKEN_KEY = 'refreshToken';
 let refreshPromise: Promise<string | null> | null = null;
+let unauthorizedHandling = false;
 
 function getTokenExpMs(token: string): number | null {
   try {
@@ -29,8 +31,22 @@ function isTokenFreshEnough(token: string): boolean {
 }
 
 async function clearLocalSession() {
+  wsClient.disconnect();
   localStorage.removeItem('token');
   await db.appMeta.delete(REFRESH_TOKEN_KEY);
+}
+
+async function handleUnauthorizedSession() {
+  if (unauthorizedHandling) return;
+  unauthorizedHandling = true;
+  try {
+    await clearLocalSession();
+    if (globalThis.location.pathname !== '/welcome') {
+      globalThis.location.replace('/welcome');
+    }
+  } finally {
+    unauthorizedHandling = false;
+  }
 }
 
 const refreshClient = createTRPCProxyClient<AppRouter>({
@@ -84,6 +100,9 @@ const errorHandlingLink: TRPCLink<AppRouter> = () => {
           observer.next(value);
         },
         error(err) {
+          if ((err as { data?: { code?: string } })?.data?.code === 'UNAUTHORIZED') {
+            void handleUnauthorizedSession();
+          }
           // Send all errors to our single frontend error handler
           handleGlobalError(err);
           observer.error(err);

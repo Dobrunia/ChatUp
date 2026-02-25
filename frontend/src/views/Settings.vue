@@ -82,8 +82,13 @@ onMounted(() => {
 
 const togglePush = async () => {
   if (settingsStore.notificationsEnabled) {
-    settingsStore.toggleNotifications(false);
-    toast.success(TOAST_MESSAGES.PUSH_DISABLED);
+    try {
+      await pushService.disablePush();
+      settingsStore.toggleNotifications(false);
+      toast.success(TOAST_MESSAGES.PUSH_DISABLED);
+    } catch (error) {
+      notifyError(error);
+    }
     return;
   }
 

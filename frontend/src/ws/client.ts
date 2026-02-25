@@ -11,7 +11,10 @@ class WsClient {
   private dialogsRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   
   public connect() {
-    if (this.client?.readyState === W3CWebSocket.OPEN) {
+    if (
+      this.client?.readyState === W3CWebSocket.OPEN ||
+      this.client?.readyState === W3CWebSocket.CONNECTING
+    ) {
       return;
     }
 
@@ -20,9 +23,15 @@ class WsClient {
 
     const wsUrl = `${config.ws.url}?token=${encodeURIComponent(token)}`;
     this.client = new W3CWebSocket(wsUrl);
+    const dialogsStore = useDialogsStore();
 
     this.client.onopen = () => {
       console.log('WS Connected');
+      dialogsStore.fetchDialogs().catch((error: unknown) => {
+        if (import.meta.env.DEV) {
+          console.debug('Failed to refresh dialogs after WS connect', error);
+        }
+      });
       if (this.reconnectTimer) {
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = null;
@@ -56,6 +65,7 @@ class WsClient {
     }
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
     if (this.dialogsRefreshTimer) {
       clearTimeout(this.dialogsRefreshTimer);
@@ -65,6 +75,7 @@ class WsClient {
 
   private scheduleReconnect() {
     this.reconnectTimer ??= setTimeout(() => {
+      this.reconnectTimer = null;
       this.connect();
     }, 5000);
   }

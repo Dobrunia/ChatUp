@@ -10,6 +10,11 @@ const webPushSubscriptionSchema = z.object({
   }),
 });
 
+const nativePushTokenSchema = z.object({
+  token: z.string().min(1),
+  platform: z.string().min(1).max(20),
+});
+
 export const pushRouter = router({
   registerWebSubscription: protectedProcedure
     .input(webPushSubscriptionSchema)
@@ -22,6 +27,20 @@ export const pushRouter = router({
     .input(z.object({ endpoint: z.string().url() }))
     .mutation(async ({ input, ctx }) => {
       await PushService.unregisterWebSubscription(ctx.user.userId, input.endpoint);
+      return { success: true };
+    }),
+
+  registerNativeToken: protectedProcedure
+    .input(nativePushTokenSchema)
+    .mutation(async ({ input, ctx }) => {
+      await PushService.registerNativeToken(ctx.user.userId, input);
+      return { success: true };
+    }),
+
+  unregisterNativeToken: protectedProcedure
+    .input(z.object({ token: z.string().min(1) }))
+    .mutation(async ({ input, ctx }) => {
+      await PushService.unregisterNativeToken(ctx.user.userId, input.token);
       return { success: true };
     }),
 });
