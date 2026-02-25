@@ -10,7 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
     "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.2.1",
     "@capacitor/push-notifications": "^6.0.5",
     "@chatup/shared": "*",
     "@ionic/vue": "^8.2.0",

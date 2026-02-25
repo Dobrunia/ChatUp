@@ -88,10 +88,11 @@ jobs:
 
       - name: Sync Capacitor Android project
         run: npx cap sync android
+        working-directory: frontend
 
       - name: Build Android release artifact
         run: |
-          cd android
+          cd frontend/android
           ./gradlew assembleRelease
 
       - name: Upload Android artifacts
@@ -99,8 +100,8 @@ jobs:
         with:
           name: android-release-${{ needs.check-release-version.outputs.current_version }}
           path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+            frontend/android/app/build/outputs/apk/release/*.apk
+            frontend/android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: warn
 
   build-ios:
@@ -125,15 +126,16 @@ jobs:
 
       - name: Sync Capacitor iOS project
         run: npx cap sync ios
+        working-directory: frontend
 
       - name: Build iOS archive (unsigned)
         run: |
           xcodebuild \
-            -workspace ios/App/App.xcworkspace \
+            -workspace frontend/ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
-            -archivePath ios/build/App.xcarchive \
+            -archivePath frontend/ios/build/App.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             archive
 
@@ -141,7 +143,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ios-archive-${{ needs.check-release-version.outputs.current_version }}
-          path: ios/build/App.xcarchive
+          path: frontend/ios/build/App.xcarchive
           if-no-files-found: warn
 
   release-build-skip-info:
