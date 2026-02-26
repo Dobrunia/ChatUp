@@ -1,43 +1,49 @@
 <template>
   <ion-page>
     <ion-content class="ion-padding">
-      <div class="conversations-topbar">
-        <h2 class="conversations-title">Диалоги</h2>
-        <button class="icon-btn icon-btn-ghost" @click="router.push('/profile')">
-          <img
-            v-if="profileStore.profile?.avatarUrl"
-            :src="profileStore.profile.avatarUrl"
-            alt="Профиль"
-            class="avatar-image"
-          />
-          <span v-else class="avatar-fallback">{{ avatarInitials }}</span>
-        </button>
-      </div>
-
-      <div class="conversations-content">
-        <p v-if="loadError">{{ loadError }}</p>
-        <div class="new-chat-row">
-          <button class="btn btn-primary" @click="router.push('/search')">Новый чат</button>
-        </div>
-        <ul class="conversation-list">
+      <div class="page-narrow page-stack">
+        <app-header class="page-header" title="Диалоги" subtitle="Личные сообщения">
+          <template #left>
+            <button class="icon-btn icon-btn-ghost" @click="router.push('/search')" aria-label="Новый чат">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 5v14M5 12h14"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+          </template>
+          <template #right>
+            <button class="icon-btn icon-btn-ghost avatar-btn" @click="router.push('/profile')">
+              <img
+                v-if="profileStore.profile?.avatarUrl"
+                :src="profileStore.profile.avatarUrl"
+                alt="Профиль"
+                class="avatar-image"
+              />
+              <span v-else class="avatar-fallback">{{ avatarInitials }}</span>
+            </button>
+          </template>
+        </app-header>
+        <p v-if="loadError" class="notice-bar notice-bar-error">{{ loadError }}</p>
+        <ul v-if="conversationsStore.sortedConversations.length > 0" class="list-card conversation-list">
           <li v-for="item in conversationsStore.sortedConversations" :key="item.id">
-            <button class="conversation-item" @click="open(item.id)">
+            <button class="list-item conversation-item" @click="open(item.id)">
               <div class="conversation-avatar">
                 <img
                   v-if="getPeerProfile(item)?.avatarUrl"
                   :src="getPeerProfile(item)?.avatarUrl || ''"
                   alt="Аватар"
-                  class="conversation-avatar-image"
+                  class="conversation-avatar-image avatar-image"
                 />
-                <span v-else class="conversation-avatar-fallback">{{ peerInitials(item) }}</span>
+                <span v-else class="conversation-avatar-fallback avatar-fallback">{{ peerInitials(item) }}</span>
               </div>
               <div class="conversation-main">
-                <div class="conversation-row">
+                <div class="list-row conversation-row">
                   <strong class="conversation-name">{{ peerName(item) }}</strong>
-                  <span class="conversation-time">{{ timeLabel(item) }}</span>
-                </div>
-                <div class="conversation-row">
-                  <span class="conversation-preview">
+                  <span class="list-meta conversation-meta">
                     <span
                       v-if="isOwnLastMessage(item)"
                       class="conversation-status-icon"
@@ -46,6 +52,11 @@
                     >
                       {{ conversationStatusIcon(item) }}
                     </span>
+                    <span class="conversation-time meta-time">{{ timeLabel(item) }}</span>
+                  </span>
+                </div>
+                <div class="list-row conversation-row">
+                  <span class="conversation-preview">
                     <span class="conversation-preview-text">{{ messagePreview(item) }}</span>
                   </span>
                   <span v-if="item.unreadCount > 0" class="conversation-unread">{{ item.unreadCount }}</span>
@@ -54,6 +65,10 @@
             </button>
           </li>
         </ul>
+        <div v-else class="empty-state">
+          <div class="empty-state-title">Диалогов пока нет</div>
+          <div class="empty-state-text">Найди пользователя и начни переписку.</div>
+        </div>
       </div>
     </ion-content>
   </ion-page>
@@ -63,6 +78,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonContent, IonPage, onIonViewWillEnter } from '@ionic/vue'
+import AppHeader from '../../shared/ui/components/app-header.vue'
 import { useConversationsStore } from '../../stores/conversations-store'
 import { useSessionStore } from '../../stores/session-store'
 import { useProfileStore } from '../../stores/profile-store'
@@ -168,14 +184,22 @@ function messagePreview(conversation: Conversation): string {
   }
   const peerId = getPeerId(conversation)
   const fromPeer = peerId ? last.senderId === peerId : false
-  const prefix = fromPeer ? peerName(conversation) : 'Вы'
+  if (fromPeer) {
+    if (last.type === 'text') {
+      return `${peerName(conversation)}: ${last.body ?? ''}`.trim()
+    }
+    if (last.type === 'image') {
+      return `${peerName(conversation)}: Фото`
+    }
+    return `${peerName(conversation)}: Голосовое`
+  }
   if (last.type === 'text') {
-    return `${prefix}: ${last.body ?? ''}`.trim()
+    return `${last.body ?? ''}`.trim()
   }
   if (last.type === 'image') {
-    return `${prefix}: Фото`
+    return 'Фото'
   }
-  return `${prefix}: Голосовое`
+  return 'Голосовое'
 }
 
 function isOwnLastMessage(conversation: Conversation): boolean {
@@ -273,97 +297,19 @@ async function open(conversationId: string): Promise<void> {
 </script>
 
 <style scoped>
-.conversations-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 auto var(--space-3);
-  width: min(100%, 480px);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-}
-
-.conversations-title {
-  margin: 0;
-  color: var(--color-surface-text);
-}
-
-.conversations-content {
-  margin: 0 auto;
-  width: min(100%, 480px);
-}
-
-.new-chat-row {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--space-3);
-}
-
-.conversation-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
 .conversation-item {
-  width: 100%;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-surface-text);
-  border-radius: var(--radius-md);
-  padding: var(--space-2);
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  text-align: left;
-}
-
-.conversation-item:hover,
-.conversation-item:active {
-  background: var(--color-surface);
-  color: var(--color-surface-text);
 }
 
 .conversation-avatar {
   width: 44px;
   height: 44px;
-  border-radius: 999px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   flex-shrink: 0;
   border: 1px solid var(--color-border);
-}
-
-.conversation-avatar-image,
-.conversation-avatar-fallback,
-.avatar-image,
-.avatar-fallback {
-  width: 100%;
-  height: 100%;
-}
-
-.conversation-avatar-image,
-.avatar-image {
-  border-radius: 999px;
-  object-fit: cover;
-}
-
-.conversation-avatar-fallback,
-.avatar-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.conversation-avatar-fallback {
-  background: var(--color-primary);
-  color: var(--color-bg);
 }
 
 .conversation-main {
@@ -371,11 +317,8 @@ async function open(conversationId: string): Promise<void> {
   flex: 1;
 }
 
-.conversation-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+.conversation-meta {
+  gap: var(--space-1);
 }
 
 .conversation-name {
@@ -383,12 +326,6 @@ async function open(conversationId: string): Promise<void> {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.conversation-time {
-  color: var(--color-muted);
-  font-size: 11px;
-  flex-shrink: 0;
 }
 
 .conversation-preview {
@@ -428,9 +365,9 @@ async function open(conversationId: string): Promise<void> {
 .conversation-unread {
   min-width: 18px;
   height: 18px;
-  border-radius: 999px;
-  background: var(--color-primary);
-  color: var(--color-bg);
+  border-radius: var(--radius-xl);
+  background: var(--color-unread);
+  color: var(--color-on-primary);
   font-size: 11px;
   display: inline-flex;
   align-items: center;
@@ -438,4 +375,5 @@ async function open(conversationId: string): Promise<void> {
   padding: 0 4px;
   flex-shrink: 0;
 }
+
 </style>

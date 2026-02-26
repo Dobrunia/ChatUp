@@ -2,9 +2,9 @@
   <ion-page>
     <ion-content class="ion-padding">
       <div class="screen-center">
-        <div class="card screen-card">
-          <h2>Добро пожаловать</h2>
-          <p>Разрешите push-уведомления для входящих сообщений.</p>
+        <div class="card screen-card form-card ornamented">
+          <h2 class="card-title">Добро пожаловать</h2>
+          <p class="card-subtitle">Разрешите push-уведомления для входящих сообщений.</p>
           <button class="btn btn-primary" @click="complete">Продолжить</button>
         </div>
       </div>

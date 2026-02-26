@@ -1,26 +1,47 @@
 <template>
-  <ion-page>
+  <ion-page class="chat-page">
     <ion-content class="chat-room-content">
       <div class="chat-shell">
-        <div class="chat-header">
-          <button class="btn btn-ghost" @click="goBack">Назад</button>
-          <div class="chat-peer">
-            <img
-              v-if="peerAvatarUrl"
-              :src="peerAvatarUrl"
-              alt="Аватар собеседника"
-              class="chat-peer-avatar"
-            />
-            <div v-else class="chat-peer-avatar chat-peer-avatar-fallback">{{ peerInitials }}</div>
-            <div class="chat-peer-meta">
-              <strong class="chat-peer-name">{{ peerTitle }}</strong>
-              <span class="chat-presence">онлайн</span>
+        <app-header class="chat-header">
+          <template #left>
+            <button class="icon-btn icon-btn-ghost" @click="goBack" aria-label="Назад">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M15 6l-6 6 6 6"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </template>
+          <template #title>
+            <div class="chat-peer-title">
+              <span class="chat-peer-name">{{ peerTitle }}</span>
+              <span class="chat-peer-status">
+                <span class="status-dot" :class="{ 'status-dot-offline': !isPeerOnline }" />
+                <span class="status-label">{{ peerStatusLabel }}</span>
+              </span>
             </div>
-          </div>
-        </div>
+          </template>
+          <template #right>
+            <div class="chat-peer-avatar-wrap">
+              <img
+                v-if="peerAvatarUrl"
+                :src="peerAvatarUrl"
+                alt="Аватар собеседника"
+                class="chat-peer-avatar"
+              />
+              <div v-else class="chat-peer-avatar chat-peer-avatar-fallback">{{ peerInitials }}</div>
+            </div>
+          </template>
+        </app-header>
 
-        <p v-if="!network.isOnline" class="chat-banner">Офлайн: отправка сообщений недоступна.</p>
-        <p v-if="actionError" class="chat-banner chat-banner-error">{{ actionError }}</p>
+        <p v-if="!network.isOnline" class="notice-bar notice-bar-warning">
+          Офлайн: отправка сообщений недоступна.
+        </p>
+        <p v-if="actionError" class="notice-bar notice-bar-error">{{ actionError }}</p>
         <p v-if="chatStore.typingUsers.length > 0" class="chat-indicator">печатает...</p>
         <p v-if="chatStore.recordingUsers.length > 0" class="chat-indicator">записывает голосовое...</p>
 
@@ -44,15 +65,16 @@
                 </p>
                 <p v-else class="message-text">Голосовое сообщение</p>
                 <div class="message-meta">
-                  <span class="message-time">{{ formatMessageTime(entry.message.createdAt) }}</span>
                   <span
                     v-if="entry.message.senderId === sessionStore.userId"
                     class="message-status-icon"
                     :class="statusIconClass(entry.message.status)"
+                    :data-status="entry.message.status"
                     :title="messageStatusLabel(entry.message.status)"
                   >
                     {{ messageStatusIcon(entry.message.status) }}
                   </span>
+                  <span class="message-time meta-time">{{ formatMessageTime(entry.message.createdAt) }}</span>
                   <button
                     v-if="entry.message.status === 'failed'"
                     class="btn btn-danger message-retry"
@@ -67,22 +89,76 @@
         </div>
 
         <div class="chat-composer">
-          <button class="icon-btn icon-btn-ghost" :disabled="!network.isOnline" @click="pickImages">
-            🖼
-          </button>
-          <textarea
-            v-model="text"
-            class="textarea composer-input"
-            placeholder="Сообщение"
-            @input="onInput"
-            @keydown.enter.exact.prevent="sendText"
-          />
-          <button class="icon-btn icon-btn-ghost" :disabled="!network.isOnline" @click="sendDemoAudio">
-            🎤
-          </button>
-          <button class="icon-btn icon-btn-primary" :disabled="!network.isOnline" @click="sendText">
-            ➤
-          </button>
+          <div class="chat-composer-inner">
+            <button
+              class="icon-btn icon-btn-ghost"
+              :disabled="!network.isOnline"
+              @click="pickImages"
+              aria-label="Отправить фото"
+            >
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M4 6h4l2-2h4l2 2h4v12H4z"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  fill="none"
+                  stroke-linejoin="round"
+                />
+                <circle cx="12" cy="13" r="3.5" stroke="currentColor" stroke-width="1.5" fill="none" />
+              </svg>
+            </button>
+            <textarea
+              v-model="text"
+              class="textarea composer-input"
+              placeholder="Сообщение"
+              @input="onInput"
+              @keydown.enter.exact.prevent="sendText"
+            />
+            <button
+              class="icon-btn icon-btn-ghost"
+              :disabled="!network.isOnline"
+              @click="sendDemoAudio"
+              aria-label="Отправить голосовое"
+            >
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <rect
+                  x="9"
+                  y="4"
+                  width="6"
+                  height="10"
+                  rx="3"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  fill="none"
+                />
+                <path
+                  d="M6 10v1a6 6 0 0 0 12 0v-1M12 17v3"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  fill="none"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+            <button
+              class="icon-btn icon-btn-primary composer-send"
+              :class="{ 'composer-send-active': canSend }"
+              :disabled="!canSend"
+              @click="sendText"
+              aria-label="Отправить сообщение"
+            >
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M4 12h16M12 4l8 8-8 8"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </ion-content>
@@ -93,13 +169,15 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonPage } from '@ionic/vue'
+import AppHeader from '../../shared/ui/components/app-header.vue'
 import { useChatStore } from '../../stores/chat-store'
 import { useSessionStore } from '../../stores/session-store'
 import { useConversationsStore } from '../../stores/conversations-store'
 import { useNetwork } from '../../shared/composables/use-network'
+import { fetchPresence } from '../../shared/api/presence-api'
 import { fetchProfile } from '../../shared/api/profile-api'
 import { resolveUserTitle } from '../../shared/utils/profile'
-import type { Message, Profile } from '../../shared/types/chat'
+import type { Message, PresenceState, Profile } from '../../shared/types/chat'
 
 const route = useRoute()
 const router = useRouter()
@@ -110,10 +188,13 @@ const network = useNetwork()
 const text = ref('')
 const actionError = ref<string | null>(null)
 const peerProfile = ref<Profile | null>(null)
+const peerPresence = ref<PresenceState | null>(null)
+const peerUserId = ref<string | null>(null)
 const messagesListEl = ref<HTMLElement | null>(null)
 const loadingOlder = ref(false)
 let markReadPoller: ReturnType<typeof setInterval> | null = null
 let messageSyncPoller: ReturnType<typeof setInterval> | null = null
+let presencePoller: ReturnType<typeof setInterval> | null = null
 const queryPeerDisplayName = computed(() =>
   typeof route.query.peerDisplayName === 'string' ? route.query.peerDisplayName : '',
 )
@@ -131,6 +212,9 @@ const peerTitle = computed(() => {
 })
 
 const peerAvatarUrl = computed(() => peerProfile.value?.avatarUrl ?? queryPeerAvatarUrl.value)
+const isPeerOnline = computed(() => peerPresence.value?.isOnline ?? false)
+const peerStatusLabel = computed(() => (isPeerOnline.value ? 'онлайн' : 'оффлайн'))
+const canSend = computed(() => network.isOnline && text.value.trim().length > 0)
 type MessageRenderItem =
   | { kind: 'separator'; key: string; label: string }
   | { kind: 'message'; key: string; message: Message }
@@ -220,6 +304,10 @@ onUnmounted(() => {
   if (messageSyncPoller) {
     clearInterval(messageSyncPoller)
     messageSyncPoller = null
+  }
+  if (presencePoller) {
+    clearInterval(presencePoller)
+    presencePoller = null
   }
   chatStore.leaveConversation()
   conversationsStore.stopRealtime()
@@ -351,25 +439,42 @@ function toDayKey(createdAt: string): string {
 }
 
 async function loadPeerProfile(currentUserId: string): Promise<void> {
-  // Если мы уже пришли из поиска с данными собеседника, не дёргаем profiles повторно.
-  if (queryPeerDisplayName.value || queryPeerUsername.value || queryPeerAvatarUrl.value) {
-    return
-  }
-
   let conversation = conversationsStore.conversations.find((item) => item.id === conversationId)
   if (!conversation) {
     await conversationsStore.load(currentUserId)
     conversation = conversationsStore.conversations.find((item) => item.id === conversationId)
   }
-  const peerUserId = conversation?.memberIds.find((id) => id !== currentUserId)
-  if (!peerUserId) {
+  const peerId = conversation?.memberIds.find((id) => id !== currentUserId) ?? null
+  peerUserId.value = peerId
+  if (!peerId) {
     return
   }
   try {
-    peerProfile.value = await fetchProfile(peerUserId)
+    if (!queryPeerDisplayName.value && !queryPeerUsername.value && !queryPeerAvatarUrl.value) {
+      peerProfile.value = await fetchProfile(peerId)
+    }
   } catch {
     // Профиль собеседника не критичен для открытия чата.
   }
+  await loadPeerPresence(peerId)
+  startPresencePolling(peerId)
+}
+
+async function loadPeerPresence(peerId: string): Promise<void> {
+  try {
+    peerPresence.value = await fetchPresence(peerId)
+  } catch {
+    peerPresence.value = null
+  }
+}
+
+function startPresencePolling(peerId: string): void {
+  if (presencePoller) {
+    return
+  }
+  presencePoller = setInterval(() => {
+    void loadPeerPresence(peerId)
+  }, 15000)
 }
 
 async function markConversationAsRead(currentUserId: string): Promise<void> {
@@ -419,40 +524,48 @@ async function onMessagesScroll(event: Event): Promise<void> {
 </script>
 
 <style scoped>
+.chat-room-content::part(scroll) {
+  padding: 0;
+}
 .chat-shell {
-  width: min(100%, 560px);
+  width: 100%;
   height: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-4) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom));
+  padding: var(--space-3) 0 calc(var(--space-2) + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
 .chat-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  width: 100%;
+  border-radius: 0;
 }
 
-.chat-peer {
+.chat-peer-title {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: 2px;
   min-width: 0;
 }
 
+.chat-peer-avatar-wrap {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .chat-peer-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
   object-fit: cover;
   flex-shrink: 0;
+  border: 1px solid var(--color-border);
 }
 
 .chat-peer-avatar-fallback {
@@ -465,12 +578,6 @@ async function onMessagesScroll(event: Event): Promise<void> {
   font-weight: 700;
 }
 
-.chat-peer-meta {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
 .chat-peer-name {
   color: var(--color-surface-text);
   white-space: nowrap;
@@ -478,21 +585,10 @@ async function onMessagesScroll(event: Event): Promise<void> {
   text-overflow: ellipsis;
 }
 
-.chat-presence {
-  color: var(--color-muted);
-  font-size: 12px;
-}
-
-.chat-banner {
-  margin: 0;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-}
-
-.chat-banner-error {
-  border-color: var(--color-danger);
+.chat-peer-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .chat-indicator {
@@ -508,9 +604,12 @@ async function onMessagesScroll(event: Event): Promise<void> {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-right: var(--space-1);
+  padding: 0 var(--space-3);
   scrollbar-width: none;
   -ms-overflow-style: none;
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .messages-list::-webkit-scrollbar {
@@ -521,9 +620,9 @@ async function onMessagesScroll(event: Event): Promise<void> {
 .messages-day-separator {
   align-self: center;
   padding: 2px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-xl);
   border: 1px solid var(--color-border);
-  background: var(--color-surface);
+  background-color: var(--color-surface);
   color: var(--color-muted);
   font-size: 11px;
 }
@@ -537,21 +636,6 @@ async function onMessagesScroll(event: Event): Promise<void> {
   justify-content: flex-end;
 }
 
-.message-bubble {
-  max-width: 78%;
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-surface-text);
-}
-
-.message-bubble-own {
-  background: var(--chat-own-bubble-bg);
-  color: var(--color-on-primary) !important;
-  border-color: transparent;
-}
-
 .message-text {
   color: inherit;
   margin: 0;
@@ -560,27 +644,6 @@ async function onMessagesScroll(event: Event): Promise<void> {
 
 .message-bubble-own .message-text {
   color: var(--color-on-primary) !important;
-}
-
-.message-meta {
-  margin-top: var(--space-1);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: 11px;
-  opacity: 0.9;
-}
-
-.message-time {
-  color: var(--color-muted);
-}
-
-.message-status-icon {
-  min-width: 24px;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1;
 }
 
 .message-status-default {
@@ -612,15 +675,22 @@ async function onMessagesScroll(event: Event): Promise<void> {
   position: sticky;
   bottom: 0;
   z-index: 2;
+  width: 100%;
+  background-color: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+
+.chat-composer-inner {
+  max-width: 520px;
+  margin: 0 auto;
   display: grid;
   grid-template-columns: auto 1fr auto auto;
   gap: var(--space-2);
   align-items: center;
-  padding: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
+  padding: var(--space-2) var(--space-3) calc(var(--space-2) + env(safe-area-inset-bottom));
 }
+
 
 .composer-input {
   min-height: 40px;
@@ -628,4 +698,17 @@ async function onMessagesScroll(event: Event): Promise<void> {
   resize: none;
   overflow-y: auto;
 }
+
+.composer-send {
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+.composer-send-active {
+  box-shadow:
+    0 0 0 2px rgba(91, 127, 166, 0.35),
+    0 10px 18px rgba(0, 0, 0, 0.18),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+  filter: brightness(1.06);
+}
+
 </style>

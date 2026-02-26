@@ -2,22 +2,25 @@
   <ion-page>
     <ion-content class="ion-padding">
       <div class="screen-center">
-        <div class="card screen-card">
-          <h2>Вход</h2>
-          <input v-model.trim="email" class="input" type="email" placeholder="Почта" />
-          <div style="height: var(--space-2)" />
-          <input v-model="password" class="input" type="password" placeholder="Пароль" />
-          <div style="height: var(--space-3)" />
-          <div style="display: flex; gap: var(--space-2)">
+        <div class="card screen-card form-card ornamented">
+          <h2 class="card-title">Вход</h2>
+          <p class="card-subtitle">Доступ к диалогам и профилю</p>
+          <div class="form-fields">
+            <input v-model.trim="email" class="input" type="email" placeholder="Почта" />
+            <input v-model="password" class="input" type="password" placeholder="Пароль" />
+          </div>
+          <div class="form-actions">
             <button class="btn btn-primary" :disabled="sessionStore.authLoading" @click="login">
               Войти
             </button>
             <button class="btn btn-ghost" :disabled="sessionStore.authLoading" @click="register">
-              Регистрация
+              Создать аккаунт
             </button>
           </div>
-          <p v-if="formError">{{ formError }}</p>
-          <p v-if="sessionStore.authError">{{ sessionStore.authError }}</p>
+          <p v-if="formError" class="notice-bar notice-bar-error">{{ formError }}</p>
+          <p v-if="sessionStore.authError" class="notice-bar notice-bar-error">
+            {{ sessionStore.authError }}
+          </p>
         </div>
       </div>
     </ion-content>

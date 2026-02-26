@@ -2,10 +2,10 @@
   <ion-page>
     <ion-content class="ion-padding">
       <div class="screen-center">
-        <div class="card screen-card">
-          <h2>Запуск</h2>
-          <p>Подготовка сессии и сервисов...</p>
-          <p v-if="bootWarning">{{ bootWarning }}</p>
+        <div class="card screen-card form-card ornamented">
+          <h2 class="card-title">Запуск</h2>
+          <p class="card-subtitle">Подготовка сессии и сервисов...</p>
+          <p v-if="bootWarning" class="notice-bar notice-bar-warning">{{ bootWarning }}</p>
         </div>
       </div>
     </ion-content>
