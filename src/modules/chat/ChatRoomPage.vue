@@ -24,7 +24,7 @@
         <p v-if="chatStore.typingUsers.length > 0" class="chat-indicator">печатает...</p>
         <p v-if="chatStore.recordingUsers.length > 0" class="chat-indicator">записывает голосовое...</p>
 
-        <div class="messages-list">
+        <div ref="messagesListEl" class="messages-list">
           <div
             v-for="item in chatStore.messages"
             :key="item.id"
@@ -83,7 +83,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonPage } from '@ionic/vue'
 import { useChatStore } from '../../stores/chat-store'
@@ -103,6 +103,9 @@ const network = useNetwork()
 const text = ref('')
 const actionError = ref<string | null>(null)
 const peerProfile = ref<Profile | null>(null)
+const messagesListEl = ref<HTMLElement | null>(null)
+let markReadPoller: ReturnType<typeof setInterval> | null = null
+let messageSyncPoller: ReturnType<typeof setInterval> | null = null
 const queryPeerDisplayName = computed(() =>
   typeof route.query.peerDisplayName === 'string' ? route.query.peerDisplayName : '',
 )
@@ -141,18 +144,52 @@ const conversationId = route.params.conversationId as string
 onMounted(async () => {
   try {
     actionError.value = null
-    await chatStore.enterConversation(conversationId)
     if (sessionStore.userId) {
-      await conversationsStore.markRead(sessionStore.userId)
-      await loadPeerProfile(sessionStore.userId)
+      conversationsStore.startRealtime(sessionStore.userId)
+    }
+    conversationsStore.setActiveConversation?.(conversationId)
+    await chatStore.enterConversation(conversationId)
+    await nextTick()
+    scrollMessagesToBottom()
+    const currentUserId = sessionStore.userId
+    if (currentUserId) {
+      await markConversationAsRead(currentUserId)
+      await loadPeerProfile(currentUserId)
+      markReadPoller = setInterval(() => {
+        markConversationAsRead(currentUserId).catch(() => {
+          // Ошибки read-receipt уже обрабатываются внутри.
+        })
+      }, 2000)
+      messageSyncPoller = setInterval(() => {
+        chatStore.reload?.(conversationId).catch(() => {
+          // Не блокируем UI, если sync временно не удался.
+        })
+      }, 2000)
     }
   } catch (error) {
     actionError.value = error instanceof Error ? error.message : 'Не удалось открыть чат'
   }
 })
 
+watch(
+  () => chatStore.messages.length,
+  async () => {
+    await nextTick()
+    scrollMessagesToBottom()
+  },
+)
+
 onUnmounted(() => {
+  if (markReadPoller) {
+    clearInterval(markReadPoller)
+    markReadPoller = null
+  }
+  if (messageSyncPoller) {
+    clearInterval(messageSyncPoller)
+    messageSyncPoller = null
+  }
   chatStore.leaveConversation()
+  conversationsStore.stopRealtime()
 })
 
 async function onInput(): Promise<void> {
@@ -277,6 +314,27 @@ async function loadPeerProfile(currentUserId: string): Promise<void> {
     // Профиль собеседника не критичен для открытия чата.
   }
 }
+
+async function markConversationAsRead(currentUserId: string): Promise<void> {
+  const latestMessageDateMs = chatStore.messages.reduce((maxMs, message) => {
+    const messageMs = new Date(message.createdAt).getTime()
+    return Number.isFinite(messageMs) ? Math.max(maxMs, messageMs) : maxMs
+  }, 0)
+  const nowMs = Date.now()
+  const readAtIso = new Date(Math.max(nowMs, latestMessageDateMs) + 1000).toISOString()
+  try {
+    await conversationsStore.markRead(currentUserId, conversationId, readAtIso)
+  } catch {
+    // Не ломаем чат из-за временной ошибки read-receipt.
+  }
+}
+
+function scrollMessagesToBottom(): void {
+  if (!messagesListEl.value) {
+    return
+  }
+  messagesListEl.value.scrollTop = messagesListEl.value.scrollHeight
+}
 </script>
 
 <style scoped>
@@ -321,7 +379,7 @@ async function loadPeerProfile(currentUserId: string): Promise<void> {
   align-items: center;
   justify-content: center;
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--color-on-primary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -333,6 +391,7 @@ async function loadPeerProfile(currentUserId: string): Promise<void> {
 }
 
 .chat-peer-name {
+  color: var(--color-surface-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -369,6 +428,13 @@ async function loadPeerProfile(currentUserId: string): Promise<void> {
   min-height: 0;
   overflow-y: auto;
   padding-right: var(--space-1);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.messages-list::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .message-row {
@@ -386,17 +452,23 @@ async function loadPeerProfile(currentUserId: string): Promise<void> {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
+  color: var(--color-surface-text);
 }
 
 .message-bubble-own {
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--color-on-primary) !important;
   border-color: transparent;
 }
 
 .message-text {
+  color: inherit;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.message-bubble-own .message-text {
+  color: var(--color-on-primary) !important;
 }
 
 .message-meta {
@@ -431,7 +503,7 @@ async function loadPeerProfile(currentUserId: string): Promise<void> {
 .message-bubble-own .message-status-default,
 .message-bubble-own .message-status-read,
 .message-bubble-own .message-status-failed {
-  color: var(--color-bg);
+  color: var(--color-on-primary);
 }
 
 .message-retry {

@@ -52,7 +52,7 @@ body {
 
 .btn-primary {
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--color-on-primary);
 }
 
 .btn-ghost {
@@ -63,7 +63,7 @@ body {
 
 .btn-danger {
   background: var(--color-danger);
-  color: var(--color-bg);
+  color: var(--color-on-primary);
 }
 
 .icon-btn {
@@ -86,7 +86,7 @@ body {
 
 .icon-btn-primary {
   background: var(--color-primary);
-  color: var(--color-bg);
+  color: var(--color-on-primary);
   border-color: transparent;
 }
 

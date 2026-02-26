@@ -17,6 +17,14 @@ export function subscribeMessages(conversationId: string, handler: MessageInsert
         handler(id)
       },
     )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+      (payload) => {
+        const id = payload.new.id as string
+        handler(id)
+      },
+    )
     .subscribe()
 }
 

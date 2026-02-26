@@ -98,16 +98,24 @@ create table if not exists public.messages (
   conversation_id uuid not null references public.conversations(id) on delete cascade,
   sender_id uuid not null references public.profiles(id) on delete restrict,
   type text not null, -- 'text' | 'image' | 'audio'
+  status text not null default 'sent', -- persisted status: 'sent' | 'read'
   body text,
   media jsonb,        -- { url, type, size, duration? }
   client_id text not null, -- для идемпотентности на ретраях
   created_at timestamptz not null default now(),
   constraint message_type check (type in ('text','image','audio')),
+  constraint message_status check (status in ('sent','read')),
   constraint message_body_or_media check (
     (type = 'text' and body is not null) or
     (type in ('image','audio') and media is not null)
   )
 );
+
+-- Миграционно-безопасно для уже существующей таблицы
+alter table public.messages add column if not exists status text not null default 'sent';
+alter table public.messages drop constraint if exists message_status;
+alter table public.messages
+  add constraint message_status check (status in ('sent','read'));
 
 create index if not exists idx_messages_conv_created_at on public.messages(conversation_id, created_at desc);
 create index if not exists idx_messages_sender_created_at on public.messages(sender_id, created_at desc);
@@ -167,6 +175,7 @@ last_msg as (
     m.id as last_message_id,
     m.sender_id as last_message_sender_id,
     m.type as last_message_type,
+    m.status as last_message_status,
     m.body as last_message_body,
     m.media as last_message_media,
     m.created_at as last_message_created_at
@@ -202,12 +211,49 @@ select
   last_msg.last_message_type,
   last_msg.last_message_body,
   last_msg.last_message_media,
-  last_msg.last_message_created_at
+  last_msg.last_message_created_at,
+  last_msg.last_message_status
 from public.conversations c
 join my_memberships mm on mm.conversation_id = c.id
 join members on members.conversation_id = c.id
 left join last_msg on last_msg.conversation_id = c.id
 left join unread on unread.conversation_id = c.id;
+
+-- 10) Atomic read receipt: обновляет и last_read_at, и message.status
+create or replace function public.mark_conversation_read(
+  p_conversation_id uuid,
+  p_last_read_at timestamptz default now()
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1
+    from public.conversation_members cm
+    where cm.conversation_id = p_conversation_id
+      and cm.user_id = auth.uid()
+  ) then
+    raise exception 'forbidden';
+  end if;
+
+  insert into public.conversation_members (conversation_id, user_id, last_read_at)
+  values (p_conversation_id, auth.uid(), p_last_read_at)
+  on conflict (conversation_id, user_id) do update
+  set last_read_at = excluded.last_read_at;
+
+  update public.messages
+  set status = 'read'
+  where conversation_id = p_conversation_id
+    and sender_id <> auth.uid()
+    and created_at <= p_last_read_at
+    and status <> 'read';
+end;
+$$;
+
+grant execute on function public.mark_conversation_read(uuid, timestamptz) to authenticated;
 
 -- =========================
 -- RLS (минимально необходимый набор)

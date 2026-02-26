@@ -60,9 +60,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { IonContent, IonPage } from '@ionic/vue'
+import { IonContent, IonPage, onIonViewWillEnter } from '@ionic/vue'
 import { useConversationsStore } from '../../stores/conversations-store'
 import { useSessionStore } from '../../stores/session-store'
 import { useProfileStore } from '../../stores/profile-store'
@@ -88,7 +88,7 @@ const avatarInitials = computed(() => {
   return source.slice(0, 2).toUpperCase()
 })
 
-onMounted(async () => {
+async function bootstrapConversations(): Promise<void> {
   if (!sessionStore.userId) {
     await router.replace('/auth')
     return
@@ -98,7 +98,8 @@ onMounted(async () => {
       await profileStore.load()
     }
     await conversationsStore.load(sessionStore.userId)
-    await hydratePeerProfiles()
+    conversationsStore.startRealtime(sessionStore.userId)
+    await hydrateMissingPeerProfiles()
     loadError.value = null
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Ошибка загрузки диалогов'
@@ -108,7 +109,26 @@ onMounted(async () => {
     }
     loadError.value = message
   }
+}
+
+onMounted(async () => {
+  await bootstrapConversations()
 })
+
+onIonViewWillEnter(() => {
+  void bootstrapConversations()
+})
+
+onUnmounted(() => {
+  conversationsStore.stopRealtime()
+})
+
+watch(
+  () => conversationsStore.sortedConversations.map((item) => item.id).join('|'),
+  () => {
+    void hydrateMissingPeerProfiles()
+  },
+)
 
 function getPeerId(conversation: Conversation): string | null {
   const currentUserId = sessionStore.userId
@@ -146,8 +166,9 @@ function messagePreview(conversation: Conversation): string {
   if (!last) {
     return 'Сообщений пока нет'
   }
-  const fromCurrentUser = last.senderId === sessionStore.userId
-  const prefix = fromCurrentUser ? 'Вы' : peerName(conversation)
+  const peerId = getPeerId(conversation)
+  const fromPeer = peerId ? last.senderId === peerId : false
+  const prefix = fromPeer ? peerName(conversation) : 'Вы'
   if (last.type === 'text') {
     return `${prefix}: ${last.body ?? ''}`.trim()
   }
@@ -214,11 +235,14 @@ function timeLabel(conversation: Conversation): string {
   return new Intl.DateTimeFormat('ru-RU', { day: '2-digit', month: '2-digit' }).format(date)
 }
 
-async function hydratePeerProfiles(): Promise<void> {
+async function hydrateMissingPeerProfiles(): Promise<void> {
   const peers = conversationsStore.sortedConversations
     .map((conversation) => getPeerId(conversation))
     .filter((id): id is string => Boolean(id))
-  const uniquePeerIds = [...new Set(peers)]
+  const uniquePeerIds = [...new Set(peers)].filter((peerId) => !peerProfiles.value[peerId])
+  if (uniquePeerIds.length === 0) {
+    return
+  }
   const profileEntries = await Promise.all(
     uniquePeerIds.map(async (peerId) => {
       try {
@@ -230,7 +254,7 @@ async function hydratePeerProfiles(): Promise<void> {
     }),
   )
 
-  const map: Record<string, Profile> = {}
+  const map: Record<string, Profile> = { ...peerProfiles.value }
   profileEntries.forEach(([peerId, profile]) => {
     if (profile) {
       map[peerId] = profile
@@ -290,12 +314,19 @@ async function open(conversationId: string): Promise<void> {
   width: 100%;
   border: 1px solid var(--color-border);
   background: var(--color-surface);
+  color: var(--color-surface-text);
   border-radius: var(--radius-md);
   padding: var(--space-2);
   display: flex;
   align-items: center;
   gap: var(--space-2);
   text-align: left;
+}
+
+.conversation-item:hover,
+.conversation-item:active {
+  background: var(--color-surface);
+  color: var(--color-surface-text);
 }
 
 .conversation-avatar {
@@ -348,6 +379,7 @@ async function open(conversationId: string): Promise<void> {
 }
 
 .conversation-name {
+  color: var(--color-surface-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

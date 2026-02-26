@@ -6,6 +6,7 @@ interface MessageRow {
   conversation_id: string
   sender_id: string
   type: MessageType
+  status: 'sent' | 'read'
   body: string | null
   media: {
     url?: string
@@ -38,14 +39,14 @@ function normalizeMessage(row: MessageRow): Message {
     body: row.body,
     media: normalizeMedia(row),
     createdAt: row.created_at,
-    status: 'sent',
+    status: row.status ?? 'sent',
   }
 }
 
 export async function fetchMessages(conversationId: string, limit = 30): Promise<Message[]> {
   const { data, error } = await supabase
     .from('messages')
-    .select('id,conversation_id,sender_id,type,body,media,client_id,created_at')
+    .select('id,conversation_id,sender_id,type,status,body,media,client_id,created_at')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -71,9 +72,10 @@ export async function insertMessage(message: Message): Promise<Message> {
             duration: message.media.duration,
           }
         : null,
+      status: 'sent',
       client_id: message.id,
     })
-    .select('id,conversation_id,sender_id,type,body,media,client_id,created_at')
+    .select('id,conversation_id,sender_id,type,status,body,media,client_id,created_at')
     .single<MessageRow>()
   if (error) {
     throw error

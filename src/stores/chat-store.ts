@@ -2,7 +2,6 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useChat } from '../shared/composables/use-chat'
 import { useRealtime } from '../shared/composables/use-realtime'
-import type { Message } from '../shared/types/chat'
 
 export const useChatStore = defineStore('chat', () => {
   const chat = useChat()
@@ -27,6 +26,10 @@ export const useChatStore = defineStore('chat', () => {
       activeCleanup.value()
       activeCleanup.value = null
     }
+  }
+
+  async function reload(conversationId: string): Promise<void> {
+    await chat.loadMessages(conversationId)
   }
 
   async function sendText(conversationId: string, senderId: string, text: string): Promise<void> {
@@ -68,6 +71,7 @@ export const useChatStore = defineStore('chat', () => {
     recordingUsers,
     enterConversation,
     leaveConversation,
+    reload,
     sendText,
     sendImages,
     sendAudio,

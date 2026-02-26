@@ -27,7 +27,6 @@ export function useRealtime() {
     const recordingChannel = subscribeRecording(conversationId, (payload) => {
       updateRecording(payload)
     })
-
     channels.add(msgChannel)
     channels.add(typingChannel)
     channels.add(recordingChannel)
