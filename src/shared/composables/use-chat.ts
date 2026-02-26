@@ -6,14 +6,50 @@ import type { Message, MessageType } from '../types/chat'
 
 const messages = ref<Message[]>([])
 const messageLoading = ref(false)
+const messageOlderLoading = ref(false)
+const hasMoreMessages = ref(true)
+const activeConversationId = ref<string | null>(null)
+const PAGE_SIZE = 30
 
 export function useChat() {
   async function loadMessages(conversationId: string): Promise<void> {
+    activeConversationId.value = conversationId
     messageLoading.value = true
     try {
-      messages.value = await fetchMessages(conversationId)
+      const chunk = await fetchMessages(conversationId, PAGE_SIZE)
+      messages.value = chunk
+      hasMoreMessages.value = chunk.length >= PAGE_SIZE
     } finally {
       messageLoading.value = false
+    }
+  }
+
+  async function loadOlderMessages(): Promise<boolean> {
+    const conversationId = activeConversationId.value
+    if (!conversationId || messageOlderLoading.value || !hasMoreMessages.value) {
+      return false
+    }
+    const oldest = messages.value[0]
+    if (!oldest) {
+      return false
+    }
+
+    messageOlderLoading.value = true
+    try {
+      const chunk = await fetchMessages(conversationId, PAGE_SIZE, oldest.createdAt)
+      hasMoreMessages.value = chunk.length >= PAGE_SIZE
+      if (chunk.length === 0) {
+        return false
+      }
+      const existingIds = new Set(messages.value.map((item) => item.id))
+      const uniqueChunk = chunk.filter((item) => !existingIds.has(item.id))
+      if (uniqueChunk.length === 0) {
+        return false
+      }
+      messages.value = [...uniqueChunk, ...messages.value]
+      return true
+    } finally {
+      messageOlderLoading.value = false
     }
   }
 
@@ -101,7 +137,10 @@ export function useChat() {
   return {
     messages,
     messageLoading,
+    messageOlderLoading,
+    hasMoreMessages,
     loadMessages,
+    loadOlderMessages,
     sendTextMessage,
     sendImageMessages,
     sendAudioMessage,

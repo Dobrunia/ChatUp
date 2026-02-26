@@ -43,13 +43,22 @@ function normalizeMessage(row: MessageRow): Message {
   }
 }
 
-export async function fetchMessages(conversationId: string, limit = 30): Promise<Message[]> {
-  const { data, error } = await supabase
+export async function fetchMessages(
+  conversationId: string,
+  limit = 30,
+  beforeCreatedAt?: string,
+): Promise<Message[]> {
+  let query = supabase
     .from('messages')
     .select('id,conversation_id,sender_id,type,status,body,media,client_id,created_at')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(limit)
+  if (beforeCreatedAt) {
+    query = query.lt('created_at', beforeCreatedAt)
+  }
+  const { data, error } = await query
   if (error) {
     throw error
   }

@@ -32,6 +32,10 @@ export const useChatStore = defineStore('chat', () => {
     await chat.loadMessages(conversationId)
   }
 
+  async function loadOlder(): Promise<boolean> {
+    return chat.loadOlderMessages()
+  }
+
   async function sendText(conversationId: string, senderId: string, text: string): Promise<void> {
     await chat.sendTextMessage(conversationId, senderId, text)
   }
@@ -67,11 +71,14 @@ export const useChatStore = defineStore('chat', () => {
   return {
     messages: chat.messages,
     loading: chat.messageLoading,
+    loadingOlder: chat.messageOlderLoading,
+    hasMoreMessages: chat.hasMoreMessages,
     typingUsers,
     recordingUsers,
     enterConversation,
     leaveConversation,
     reload,
+    loadOlder,
     sendText,
     sendImages,
     sendAudio,

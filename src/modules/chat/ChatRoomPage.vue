@@ -24,39 +24,46 @@
         <p v-if="chatStore.typingUsers.length > 0" class="chat-indicator">печатает...</p>
         <p v-if="chatStore.recordingUsers.length > 0" class="chat-indicator">записывает голосовое...</p>
 
-        <div ref="messagesListEl" class="messages-list">
-          <div
-            v-for="item in chatStore.messages"
-            :key="item.id"
-            class="message-row"
-            :class="{ 'message-row-own': item.senderId === sessionStore.userId }"
-          >
+        <div ref="messagesListEl" class="messages-list" @scroll.passive="onMessagesScroll">
+          <template v-for="entry in messageRenderItems" :key="entry.key">
+            <div v-if="entry.kind === 'separator'" class="messages-day-separator">
+              {{ entry.label }}
+            </div>
             <div
-              class="message-bubble"
-              :class="{ 'message-bubble-own': item.senderId === sessionStore.userId }"
+              v-else
+              class="message-row"
+              :class="{ 'message-row-own': entry.message.senderId === sessionStore.userId }"
             >
-              <p v-if="item.type === 'text'" class="message-text">{{ item.body }}</p>
-              <p v-else-if="item.type === 'image'" class="message-text">Фото: {{ item.media?.url }}</p>
-              <p v-else class="message-text">Голосовое сообщение</p>
-              <div class="message-meta">
-                <span
-                  v-if="item.senderId === sessionStore.userId"
-                  class="message-status-icon"
-                  :class="statusIconClass(item.status)"
-                  :title="messageStatusLabel(item.status)"
-                >
-                  {{ messageStatusIcon(item.status) }}
-                </span>
-                <button
-                  v-if="item.status === 'failed'"
-                  class="btn btn-danger message-retry"
-                  @click="retryMessage(item.id)"
-                >
-                  Повторить
-                </button>
+              <div
+                class="message-bubble"
+                :class="{ 'message-bubble-own': entry.message.senderId === sessionStore.userId }"
+              >
+                <p v-if="entry.message.type === 'text'" class="message-text">{{ entry.message.body }}</p>
+                <p v-else-if="entry.message.type === 'image'" class="message-text">
+                  Фото: {{ entry.message.media?.url }}
+                </p>
+                <p v-else class="message-text">Голосовое сообщение</p>
+                <div class="message-meta">
+                  <span class="message-time">{{ formatMessageTime(entry.message.createdAt) }}</span>
+                  <span
+                    v-if="entry.message.senderId === sessionStore.userId"
+                    class="message-status-icon"
+                    :class="statusIconClass(entry.message.status)"
+                    :title="messageStatusLabel(entry.message.status)"
+                  >
+                    {{ messageStatusIcon(entry.message.status) }}
+                  </span>
+                  <button
+                    v-if="entry.message.status === 'failed'"
+                    class="btn btn-danger message-retry"
+                    @click="retryMessage(entry.message.id)"
+                  >
+                    Повторить
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
 
         <div class="chat-composer">
@@ -92,7 +99,7 @@ import { useConversationsStore } from '../../stores/conversations-store'
 import { useNetwork } from '../../shared/composables/use-network'
 import { fetchProfile } from '../../shared/api/profile-api'
 import { resolveUserTitle } from '../../shared/utils/profile'
-import type { Profile } from '../../shared/types/chat'
+import type { Message, Profile } from '../../shared/types/chat'
 
 const route = useRoute()
 const router = useRouter()
@@ -104,6 +111,7 @@ const text = ref('')
 const actionError = ref<string | null>(null)
 const peerProfile = ref<Profile | null>(null)
 const messagesListEl = ref<HTMLElement | null>(null)
+const loadingOlder = ref(false)
 let markReadPoller: ReturnType<typeof setInterval> | null = null
 let messageSyncPoller: ReturnType<typeof setInterval> | null = null
 const queryPeerDisplayName = computed(() =>
@@ -123,6 +131,31 @@ const peerTitle = computed(() => {
 })
 
 const peerAvatarUrl = computed(() => peerProfile.value?.avatarUrl ?? queryPeerAvatarUrl.value)
+type MessageRenderItem =
+  | { kind: 'separator'; key: string; label: string }
+  | { kind: 'message'; key: string; message: Message }
+
+const messageRenderItems = computed<MessageRenderItem[]>(() => {
+  const items: MessageRenderItem[] = []
+  let previousDayKey = ''
+  for (const message of chatStore.messages) {
+    const dayKey = toDayKey(message.createdAt)
+    if (dayKey !== previousDayKey) {
+      items.push({
+        kind: 'separator',
+        key: `day-${dayKey}`,
+        label: formatMessageDay(message.createdAt),
+      })
+      previousDayKey = dayKey
+    }
+    items.push({
+      kind: 'message',
+      key: message.id,
+      message,
+    })
+  }
+  return items
+})
 
 const peerInitials = computed(() => {
   const base = (
@@ -293,6 +326,30 @@ function statusIconClass(status: string): string {
   return 'message-status-default'
 }
 
+function formatMessageTime(createdAt: string): string {
+  const date = new Date(createdAt)
+  return new Intl.DateTimeFormat('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+function formatMessageDay(createdAt: string): string {
+  const date = new Date(createdAt)
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+  }).format(date)
+}
+
+function toDayKey(createdAt: string): string {
+  const date = new Date(createdAt)
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 async function loadPeerProfile(currentUserId: string): Promise<void> {
   // Если мы уже пришли из поиска с данными собеседника, не дёргаем profiles повторно.
   if (queryPeerDisplayName.value || queryPeerUsername.value || queryPeerAvatarUrl.value) {
@@ -334,6 +391,30 @@ function scrollMessagesToBottom(): void {
     return
   }
   messagesListEl.value.scrollTop = messagesListEl.value.scrollHeight
+}
+
+async function onMessagesScroll(event: Event): Promise<void> {
+  const element = event.target as HTMLElement | null
+  if (!element || loadingOlder.value || !chatStore.hasMoreMessages) {
+    return
+  }
+  if (element.scrollTop > 40) {
+    return
+  }
+  loadingOlder.value = true
+  const previousHeight = element.scrollHeight
+  const previousScrollTop = element.scrollTop
+  try {
+    const loaded = await chatStore.loadOlder()
+    if (!loaded) {
+      return
+    }
+    await nextTick()
+    const nextHeight = element.scrollHeight
+    element.scrollTop = nextHeight - previousHeight + previousScrollTop
+  } finally {
+    loadingOlder.value = false
+  }
 }
 </script>
 
@@ -437,6 +518,16 @@ function scrollMessagesToBottom(): void {
   height: 0;
 }
 
+.messages-day-separator {
+  align-self: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
 .message-row {
   display: flex;
   justify-content: flex-start;
@@ -456,7 +547,7 @@ function scrollMessagesToBottom(): void {
 }
 
 .message-bubble-own {
-  background: var(--color-primary);
+  background: var(--chat-own-bubble-bg);
   color: var(--color-on-primary) !important;
   border-color: transparent;
 }
@@ -480,6 +571,10 @@ function scrollMessagesToBottom(): void {
   opacity: 0.9;
 }
 
+.message-time {
+  color: var(--color-muted);
+}
+
 .message-status-icon {
   min-width: 24px;
   text-align: center;
@@ -501,8 +596,11 @@ function scrollMessagesToBottom(): void {
 }
 
 .message-bubble-own .message-status-default,
-.message-bubble-own .message-status-read,
 .message-bubble-own .message-status-failed {
+  color: var(--color-on-primary);
+}
+
+.message-bubble-own .message-time {
   color: var(--color-on-primary);
 }
 
@@ -527,5 +625,7 @@ function scrollMessagesToBottom(): void {
 .composer-input {
   min-height: 40px;
   max-height: 100px;
+  resize: none;
+  overflow-y: auto;
 }
 </style>
