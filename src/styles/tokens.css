@@ -1,7 +1,11 @@
 :root[data-theme='light'] {
   --app-bg-image: url('/assets/1.webp');
+  --app-content-max-width: 720px;
+  --app-header-height: calc(var(--dbru-control-height-md) + var(--dbru-space-2) * 2);
 }
 
 :root[data-theme='dark'] {
   --app-bg-image: url('/assets/3.webp');
+  --app-content-max-width: 720px;
+  --app-header-height: calc(var(--dbru-control-height-md) + var(--dbru-space-2) * 2);
 }

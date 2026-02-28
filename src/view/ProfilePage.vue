@@ -1,102 +1,129 @@
 <template>
-  <main class="page-shell">
-    <div class="page-narrow page-stack">
-      <page-header title="Профиль" subtitle="Настройки аккаунта" back-button @back="router.back()" />
-      <dbr-card class="screen-card form-card dbru-text-base dbru-text-main">
-        <div class="settings-section">
-          <div class="dbru-text-base dbru-text-main">Аккаунт</div>
-          <div class="form-fields">
-            <dbr-input v-model="username" label="@username" />
-            <dbr-input v-model="displayName" label="Отображаемое имя" />
-          </div>
-        </div>
-        <div class="settings-section">
-          <div class="dbru-text-base dbru-text-main">Аватар</div>
-          <div class="input-row">
-            <dbr-avatar
-              :src="avatarPreviewUrl"
-              :name="displayName || username || 'User'"
-              shape="rounded"
-            />
-            <dbr-input v-model="avatarUrl" label="Ссылка на аватар" />
-          </div>
-        </div>
-        <div class="settings-section">
-          <div class="dbru-text-base dbru-text-main">Уведомления</div>
-          <dbr-checkbox v-model="notificationsEnabled" label="Уведомления включены" />
-        </div>
-        <p v-if="actionError" class="dbru-text-sm dbru-text-main">{{ actionError }}</p>
-        <div class="action-row">
-          <dbr-button @click="save">Сохранить</dbr-button>
-          <dbr-button variant="danger" @click="logout">Выйти</dbr-button>
-        </div>
-      </dbr-card>
+  <section class="page">
+    <h2 class="page__title dbru-text-lg dbru-text-main">Профиль</h2>
+
+    <div v-if="!userId" class="page__state dbru-surface dbru-text-sm dbru-text-muted">
+      Нужна авторизация.
     </div>
-  </main>
+
+    <div v-else-if="loading" class="page__state dbru-surface">
+      <DbrLoader />
+    </div>
+
+    <div v-else-if="loadError" class="page__state dbru-surface dbru-text-sm dbru-text-muted">
+      {{ loadError }}
+    </div>
+
+    <DbrCard v-else-if="profile" class="profile-card">
+      <div class="profile-card__header">
+        <DbrAvatar
+          :src="form.avatarUrl || undefined"
+          :alt="form.displayName || 'Профиль'"
+          :name="form.displayName || 'Профиль'"
+          shape="rounded"
+        />
+        <div class="profile-card__avatar-input">
+          <DbrInput
+            v-model="form.avatarUrl"
+            label="URL аватара"
+            name="avatarUrl"
+            autocomplete="url"
+          />
+        </div>
+      </div>
+
+      <div class="profile-card__fields">
+        <DbrInput
+          v-model="form.displayName"
+          label="Display name"
+          name="displayName"
+          autocomplete="name"
+        />
+        <DbrInput v-model="form.username" label="Username" name="username" autocomplete="username">
+          <template #icon>
+            <span class="profile-card__input-icon dbru-text-sm dbru-text-main">@</span>
+          </template>
+        </DbrInput>
+        <DbrCheckbox
+          v-model="form.notificationsEnabled"
+          label="Уведомления включены"
+          name="notificationsEnabled"
+        />
+      </div>
+
+      <div class="profile-card__actions">
+        <DbrButton
+          :disabled="saving || !isDirty"
+          :variant="isDirty ? 'primary' : 'ghost'"
+          @click="saveProfile"
+        >
+          {{ saving ? 'Сохраняю...' : 'Сохранить' }}
+        </DbrButton>
+      </div>
+      <span v-if="saveMessage" class="dbru-text-sm dbru-text-muted">{{ saveMessage }}</span>
+    </DbrCard>
+
+    <div v-else class="page__state dbru-surface dbru-text-sm dbru-text-muted">
+      Профиль не найден.
+    </div>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watchEffect } from 'vue'
-import { useRouter } from 'vue-router'
-import {
-  DbrAvatar,
-  DbrButton,
-  DbrCard,
-  DbrCheckbox,
-  DbrInput,
-} from 'dobruniaui-vue'
-import PageHeader from '../components/PageHeader.vue'
-import { useProfileStore } from '../stores/profile-store'
-import { useSessionStore } from '../stores/session-store'
 
-const router = useRouter()
-const profileStore = useProfileStore()
-const sessionStore = useSessionStore()
+import { DbrAvatar, DbrButton, DbrCard, DbrCheckbox, DbrInput, DbrLoader } from 'dobruniaui-vue';
 
-const username = ref('')
-const displayName = ref('')
-const avatarUrl = ref('')
-const notificationsEnabled = ref(true)
-const actionError = ref<string | null>(null)
-const avatarPreviewUrl = computed(() => avatarUrl.value.trim() || undefined)
-
-watchEffect(() => {
-  const profile = profileStore.profile
-  if (!profile) {
-    return
-  }
-  username.value = profile.username ?? ''
-  displayName.value = profile.displayName ?? ''
-  avatarUrl.value = profile.avatarUrl ?? ''
-  notificationsEnabled.value = profile.notificationsEnabled
-})
-
-async function save(): Promise<void> {
-  if (!sessionStore.userId) {
-    return
-  }
-  try {
-    actionError.value = null
-    await profileStore.save({
-      userId: sessionStore.userId,
-      username: username.value || null,
-      displayName: displayName.value || null,
-      avatarUrl: avatarUrl.value || null,
-      notificationsEnabled: notificationsEnabled.value,
-    })
-  } catch (error) {
-    actionError.value = error instanceof Error ? error.message : 'Не удалось сохранить профиль'
-  }
-}
-
-async function logout(): Promise<void> {
-  try {
-    actionError.value = null
-    await sessionStore.logout()
-    await router.replace('/auth')
-  } catch (error) {
-    actionError.value = error instanceof Error ? error.message : 'Не удалось выйти из аккаунта'
-  }
-}
 
 </script>
+
+<style scoped>
+.page {
+  display: grid;
+  gap: var(--dbru-space-3);
+}
+
+.page__title {
+  margin: 0;
+}
+
+.page__state {
+  border: 1px solid var(--dbru-color-border);
+  border-radius: var(--dbru-radius-md);
+  padding: var(--dbru-space-4);
+}
+
+.profile-card {
+  display: grid;
+  gap: var(--dbru-space-4);
+  padding: var(--dbru-space-4);
+}
+
+.profile-card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--dbru-space-3);
+}
+
+.profile-card__avatar-input {
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-card__fields {
+  display: grid;
+  gap: var(--dbru-space-3);
+}
+
+.profile-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--dbru-space-3);
+  padding-top: var(--dbru-space-3);
+  border-top: 1px solid var(--dbru-color-border);
+}
+
+.profile-card__input-icon {
+  font-weight: var(--dbru-font-weight-semibold);
+}
+</style>
