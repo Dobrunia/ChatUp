@@ -8,8 +8,8 @@
       </slot>
     </div>
     <div class="page-title-wrap">
-      <h2>{{ title }}</h2>
-      <p v-if="subtitle">{{ subtitle }}</p>
+      <h2 class="dbru-text-lg dbru-text-main">{{ title }}</h2>
+      <p v-if="subtitle" class="dbru-text-sm dbru-text-muted">{{ subtitle }}</p>
     </div>
     <div class="page-header-side page-header-side-right">
       <slot name="right" />

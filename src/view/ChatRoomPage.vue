@@ -1,15 +1,15 @@
 <template>
   <main class="page-shell chat-page">
-    <div class="chat-shell">
+    <div class="chat-shell dbru-text-base dbru-text-main">
       <dbr-card class="chat-header">
         <dbr-icon-button label="Назад" variant="ghost" @click="goBack">
           <template #iconBefore>←</template>
         </dbr-icon-button>
         <div class="chat-peer-title">
-          <span>{{ peerTitle }}</span>
-          <span class="chat-peer-status">
-            <span>{{ isPeerOnline ? '●' : '○' }}</span>
-            <span>{{ peerStatusLabel }}</span>
+          <span class="dbru-text-base dbru-text-main">{{ peerTitle }}</span>
+          <span class="chat-peer-status dbru-text-sm dbru-text-muted">
+            <span class="dbru-text-xs dbru-text-muted">{{ isPeerOnline ? '●' : '○' }}</span>
+            <span class="dbru-text-sm dbru-text-muted">{{ peerStatusLabel }}</span>
           </span>
         </div>
         <dbr-avatar
@@ -19,16 +19,16 @@
         />
       </dbr-card>
 
-      <p v-if="!network.isOnline">
+      <p v-if="!network.isOnline" class="dbru-text-sm dbru-text-muted">
         Офлайн: отправка сообщений недоступна.
       </p>
-      <p v-if="actionError">{{ actionError }}</p>
-      <p v-if="chatStore.typingUsers.length > 0">печатает...</p>
-      <p v-if="chatStore.recordingUsers.length > 0">записывает голосовое...</p>
+      <p v-if="actionError" class="dbru-text-sm dbru-text-main">{{ actionError }}</p>
+      <p v-if="chatStore.typingUsers.length > 0" class="dbru-text-sm dbru-text-muted">печатает...</p>
+      <p v-if="chatStore.recordingUsers.length > 0" class="dbru-text-sm dbru-text-muted">записывает голосовое...</p>
 
       <div ref="messagesListEl" class="messages-list" @scroll.passive="onMessagesScroll">
         <template v-for="entry in messageRenderItems" :key="entry.key">
-          <div v-if="entry.kind === 'separator'">
+          <div v-if="entry.kind === 'separator'" class="dbru-text-xs dbru-text-muted">
             {{ entry.label }}
           </div>
           <div

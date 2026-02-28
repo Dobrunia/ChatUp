@@ -1,9 +1,9 @@
 <template>
   <main class="page-shell">
     <div class="screen-center">
-      <dbr-card class="screen-card form-card">
-        <h2>Вход</h2>
-        <p>Доступ к диалогам и профилю</p>
+      <dbr-card class="screen-card form-card dbru-text-base dbru-text-main">
+        <h2 class="dbru-text-lg dbru-text-main">Вход</h2>
+        <p class="dbru-text-sm dbru-text-muted">Доступ к диалогам и профилю</p>
         <div class="form-fields">
           <dbr-input v-model="email" type="email" label="Почта" />
           <dbr-input v-model="password" type="password" label="Пароль" />
@@ -14,8 +14,8 @@
             Создать аккаунт
           </dbr-button>
         </div>
-        <p v-if="formError">{{ formError }}</p>
-        <p v-if="sessionStore.authError">
+        <p v-if="formError" class="dbru-text-sm dbru-text-main">{{ formError }}</p>
+        <p v-if="sessionStore.authError" class="dbru-text-sm dbru-text-main">
           {{ sessionStore.authError }}
         </p>
       </dbr-card>

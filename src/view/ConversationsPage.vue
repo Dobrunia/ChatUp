@@ -18,7 +18,7 @@
           </button>
         </template>
       </page-header>
-      <p v-if="loadError">{{ loadError }}</p>
+      <p v-if="loadError" class="dbru-text-sm dbru-text-main">{{ loadError }}</p>
       <ul v-if="isLoading" class="conversation-list">
         <li v-for="index in 6" :key="`skeleton-${index}`">
           <dbr-card class="conversation-card">
@@ -50,8 +50,8 @@
         </li>
       </ul>
       <div v-else class="empty-state">
-        <div>Диалогов пока нет</div>
-        <div>Найди пользователя и начни переписку.</div>
+        <div class="dbru-text-base dbru-text-main">Диалогов пока нет</div>
+        <div class="dbru-text-sm dbru-text-muted">Найди пользователя и начни переписку.</div>
       </div>
     </div>
   </main>

@@ -1,9 +1,9 @@
 <template>
   <main class="page-shell">
     <div class="screen-center">
-      <dbr-card class="screen-card form-card">
-        <h2>Добро пожаловать</h2>
-        <p>Разрешите push-уведомления для входящих сообщений.</p>
+      <dbr-card class="screen-card form-card dbru-text-base dbru-text-main">
+        <h2 class="dbru-text-lg dbru-text-main">Добро пожаловать</h2>
+        <p class="dbru-text-sm dbru-text-muted">Разрешите push-уведомления для входящих сообщений.</p>
         <dbr-button class="btn-wide" @click="complete">Продолжить</dbr-button>
       </dbr-card>
     </div>

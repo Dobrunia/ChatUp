@@ -2,16 +2,16 @@
   <main class="page-shell">
     <div class="page-narrow page-stack">
       <page-header title="Профиль" subtitle="Настройки аккаунта" back-button @back="router.back()" />
-      <dbr-card class="screen-card form-card">
+      <dbr-card class="screen-card form-card dbru-text-base dbru-text-main">
         <div class="settings-section">
-          <div>Аккаунт</div>
+          <div class="dbru-text-base dbru-text-main">Аккаунт</div>
           <div class="form-fields">
             <dbr-input v-model="username" label="@username" />
             <dbr-input v-model="displayName" label="Отображаемое имя" />
           </div>
         </div>
         <div class="settings-section">
-          <div>Аватар</div>
+          <div class="dbru-text-base dbru-text-main">Аватар</div>
           <div class="input-row">
             <dbr-avatar
               :src="avatarPreviewUrl"
@@ -22,10 +22,10 @@
           </div>
         </div>
         <div class="settings-section">
-          <div>Уведомления</div>
+          <div class="dbru-text-base dbru-text-main">Уведомления</div>
           <dbr-checkbox v-model="notificationsEnabled" label="Уведомления включены" />
         </div>
-        <p v-if="actionError">{{ actionError }}</p>
+        <p v-if="actionError" class="dbru-text-sm dbru-text-main">{{ actionError }}</p>
         <div class="action-row">
           <dbr-button @click="save">Сохранить</dbr-button>
           <dbr-button variant="danger" @click="logout">Выйти</dbr-button>

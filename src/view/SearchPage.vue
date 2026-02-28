@@ -13,9 +13,9 @@
           </button>
         </template>
       </page-header>
-      <dbr-card class="screen-card form-card">
-        <h2>Поиск пользователя</h2>
-        <p v-if="actionError">{{ actionError }}</p>
+      <dbr-card class="screen-card form-card dbru-text-base dbru-text-main">
+        <h2 class="dbru-text-lg dbru-text-main">Поиск пользователя</h2>
+        <p v-if="actionError" class="dbru-text-sm dbru-text-main">{{ actionError }}</p>
         <div class="form-fields search-form-row">
           <dbr-input v-model="query" type="search" label="@username или имя" />
           <dbr-button @click="searchStore.run(query)">Найти</dbr-button>
@@ -25,34 +25,34 @@
             <button class="list-item user-row" @click="openChat(user)">
               <dbr-avatar :src="user.avatarUrl || undefined" :name="userInitials(user)" shape="rounded" />
               <div class="user-meta">
-                <div>{{ userTitle(user) }}</div>
-                <div v-if="userHandle(user)">{{ userHandle(user) }}</div>
+                <div class="dbru-text-base dbru-text-main">{{ userTitle(user) }}</div>
+                <div v-if="userHandle(user)" class="dbru-text-sm dbru-text-muted">{{ userHandle(user) }}</div>
               </div>
             </button>
           </li>
         </ul>
         <div v-else class="empty-state">
-          <div>Нет результатов</div>
-          <div>Попробуй другой запрос.</div>
+          <div class="dbru-text-base dbru-text-main">Нет результатов</div>
+          <div class="dbru-text-sm dbru-text-muted">Попробуй другой запрос.</div>
         </div>
       </dbr-card>
 
-      <dbr-card class="screen-card form-card">
-        <h3>Случайные пользователи</h3>
+      <dbr-card class="screen-card form-card dbru-text-base dbru-text-main">
+        <h3 class="dbru-text-base dbru-text-main">Случайные пользователи</h3>
         <ul v-if="searchStore.randomUsers.length > 0" class="list-card">
           <li v-for="user in searchStore.randomUsers" :key="`random-${user.userId}`">
             <button class="list-item user-row" @click="openChat(user)">
               <dbr-avatar :src="user.avatarUrl || undefined" :name="userInitials(user)" shape="rounded" />
               <div class="user-meta">
-                <div>{{ userTitle(user) }}</div>
-                <div v-if="userHandle(user)">{{ userHandle(user) }}</div>
+                <div class="dbru-text-base dbru-text-main">{{ userTitle(user) }}</div>
+                <div v-if="userHandle(user)" class="dbru-text-sm dbru-text-muted">{{ userHandle(user) }}</div>
               </div>
             </button>
           </li>
         </ul>
         <div v-else class="empty-state">
-          <div>Пока пусто</div>
-          <div>Позже появятся случайные пользователи.</div>
+          <div class="dbru-text-base dbru-text-main">Пока пусто</div>
+          <div class="dbru-text-sm dbru-text-muted">Позже появятся случайные пользователи.</div>
         </div>
       </dbr-card>
     </div>
