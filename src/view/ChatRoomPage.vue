@@ -6,30 +6,29 @@
           <template #iconBefore>←</template>
         </dbr-icon-button>
         <div class="chat-peer-title">
-          <span class="chat-peer-name">{{ peerTitle }}</span>
+          <span>{{ peerTitle }}</span>
           <span class="chat-peer-status">
-            <span class="status-dot" :class="{ 'status-dot-offline': !isPeerOnline }" />
-            <span class="status-label">{{ peerStatusLabel }}</span>
+            <span>{{ isPeerOnline ? '●' : '○' }}</span>
+            <span>{{ peerStatusLabel }}</span>
           </span>
         </div>
         <dbr-avatar
-          class="chat-peer-avatar"
           :src="peerAvatarUrl || undefined"
           :name="peerInitials"
           shape="rounded"
         />
       </dbr-card>
 
-      <p v-if="!network.isOnline" class="notice-bar notice-bar-warning">
+      <p v-if="!network.isOnline">
         Офлайн: отправка сообщений недоступна.
       </p>
-      <p v-if="actionError" class="notice-bar notice-bar-error">{{ actionError }}</p>
-      <p v-if="chatStore.typingUsers.length > 0" class="chat-indicator">печатает...</p>
-      <p v-if="chatStore.recordingUsers.length > 0" class="chat-indicator">записывает голосовое...</p>
+      <p v-if="actionError">{{ actionError }}</p>
+      <p v-if="chatStore.typingUsers.length > 0">печатает...</p>
+      <p v-if="chatStore.recordingUsers.length > 0">записывает голосовое...</p>
 
       <div ref="messagesListEl" class="messages-list" @scroll.passive="onMessagesScroll">
         <template v-for="entry in messageRenderItems" :key="entry.key">
-          <div v-if="entry.kind === 'separator'" class="messages-day-separator">
+          <div v-if="entry.kind === 'separator'">
             {{ entry.label }}
           </div>
           <div
@@ -428,105 +427,3 @@ async function onMessagesScroll(event: Event): Promise<void> {
   }
 }
 </script>
-
-<style scoped>
-.chat-page {
-  padding-top: 0;
-  padding-bottom: 0;
-}
-
-.chat-shell {
-  width: 100%;
-  height: 100%;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3) 0 calc(var(--space-2) + env(safe-area-inset-bottom));
-  box-sizing: border-box;
-}
-
-.chat-header {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-}
-
-.chat-peer-title {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 0;
-}
-
-.chat-peer-avatar {
-  width: 36px;
-  height: 36px;
-}
-
-.chat-peer-name {
-  color: var(--color-surface-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chat-peer-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.chat-indicator {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 12px;
-}
-
-.messages-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 var(--space-3);
-  max-width: 760px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-.messages-day-separator {
-  align-self: center;
-  padding: 2px 10px;
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-surface);
-  color: var(--color-muted);
-  font-size: 11px;
-}
-
-.message-row {
-  display: flex;
-  justify-content: flex-start;
-  align-items: flex-end;
-  gap: var(--space-2);
-}
-
-.message-row-own {
-  justify-content: flex-end;
-}
-
-.chat-composer {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  width: 100%;
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 0 var(--space-3);
-}
-</style>

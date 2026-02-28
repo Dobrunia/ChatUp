@@ -1,9 +1,9 @@
 <template>
   <main class="page-shell">
     <div class="screen-center">
-      <dbr-card class="screen-card form-card ornamented">
-        <h2 class="card-title">Вход</h2>
-        <p class="card-subtitle">Доступ к диалогам и профилю</p>
+      <dbr-card class="screen-card form-card">
+        <h2>Вход</h2>
+        <p>Доступ к диалогам и профилю</p>
         <div class="form-fields">
           <dbr-input v-model="email" type="email" label="Почта" />
           <dbr-input v-model="password" type="password" label="Пароль" />
@@ -14,8 +14,8 @@
             Создать аккаунт
           </dbr-button>
         </div>
-        <p v-if="formError" class="notice-bar notice-bar-error">{{ formError }}</p>
-        <p v-if="sessionStore.authError" class="notice-bar notice-bar-error">
+        <p v-if="formError">{{ formError }}</p>
+        <p v-if="sessionStore.authError">
           {{ sessionStore.authError }}
         </p>
       </dbr-card>

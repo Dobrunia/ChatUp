@@ -8,8 +8,8 @@
       </slot>
     </div>
     <div class="page-title-wrap">
-      <h2 class="card-title">{{ title }}</h2>
-      <p v-if="subtitle" class="card-subtitle">{{ subtitle }}</p>
+      <h2>{{ title }}</h2>
+      <p v-if="subtitle">{{ subtitle }}</p>
     </div>
     <div class="page-header-side page-header-side-right">
       <slot name="right" />

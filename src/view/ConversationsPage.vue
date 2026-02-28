@@ -18,7 +18,7 @@
           </button>
         </template>
       </page-header>
-      <p v-if="loadError" class="notice-bar notice-bar-error">{{ loadError }}</p>
+      <p v-if="loadError">{{ loadError }}</p>
       <ul v-if="isLoading" class="conversation-list">
         <li v-for="index in 6" :key="`skeleton-${index}`">
           <dbr-card class="conversation-card">
@@ -50,8 +50,8 @@
         </li>
       </ul>
       <div v-else class="empty-state">
-        <div class="empty-state-title">Диалогов пока нет</div>
-        <div class="empty-state-text">Найди пользователя и начни переписку.</div>
+        <div>Диалогов пока нет</div>
+        <div>Найди пользователя и начни переписку.</div>
       </div>
     </div>
   </main>
@@ -253,27 +253,3 @@ async function onThemeChange(value: boolean): Promise<void> {
   await theme.setTheme(value ? 'dark' : 'light')
 }
 </script>
-
-<style scoped>
-.avatar-nav-btn {
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-}
-
-.conversation-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.conversation-card {
-  width: 100%;
-  padding: var(--space-2);
-  cursor: pointer;
-}
-</style>

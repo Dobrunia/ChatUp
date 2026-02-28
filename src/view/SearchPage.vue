@@ -13,9 +13,9 @@
           </button>
         </template>
       </page-header>
-      <dbr-card class="screen-card form-card ornamented">
-        <h2 class="card-title">Поиск пользователя</h2>
-        <p v-if="actionError" class="notice-bar notice-bar-error">{{ actionError }}</p>
+      <dbr-card class="screen-card form-card">
+        <h2>Поиск пользователя</h2>
+        <p v-if="actionError">{{ actionError }}</p>
         <div class="form-fields search-form-row">
           <dbr-input v-model="query" type="search" label="@username или имя" />
           <dbr-button @click="searchStore.run(query)">Найти</dbr-button>
@@ -25,34 +25,34 @@
             <button class="list-item user-row" @click="openChat(user)">
               <dbr-avatar :src="user.avatarUrl || undefined" :name="userInitials(user)" shape="rounded" />
               <div class="user-meta">
-                <div class="user-name">{{ userTitle(user) }}</div>
-                <div v-if="userHandle(user)" class="user-handle">{{ userHandle(user) }}</div>
+                <div>{{ userTitle(user) }}</div>
+                <div v-if="userHandle(user)">{{ userHandle(user) }}</div>
               </div>
             </button>
           </li>
         </ul>
         <div v-else class="empty-state">
-          <div class="empty-state-title">Нет результатов</div>
-          <div class="empty-state-text">Попробуй другой запрос.</div>
+          <div>Нет результатов</div>
+          <div>Попробуй другой запрос.</div>
         </div>
       </dbr-card>
 
       <dbr-card class="screen-card form-card">
-        <h3 class="card-title">Случайные пользователи</h3>
+        <h3>Случайные пользователи</h3>
         <ul v-if="searchStore.randomUsers.length > 0" class="list-card">
           <li v-for="user in searchStore.randomUsers" :key="`random-${user.userId}`">
             <button class="list-item user-row" @click="openChat(user)">
               <dbr-avatar :src="user.avatarUrl || undefined" :name="userInitials(user)" shape="rounded" />
               <div class="user-meta">
-                <div class="user-name">{{ userTitle(user) }}</div>
-                <div v-if="userHandle(user)" class="user-handle">{{ userHandle(user) }}</div>
+                <div>{{ userTitle(user) }}</div>
+                <div v-if="userHandle(user)">{{ userHandle(user) }}</div>
               </div>
             </button>
           </li>
         </ul>
         <div v-else class="empty-state">
-          <div class="empty-state-title">Пока пусто</div>
-          <div class="empty-state-text">Позже появятся случайные пользователи.</div>
+          <div>Пока пусто</div>
+          <div>Позже появятся случайные пользователи.</div>
         </div>
       </dbr-card>
     </div>
@@ -152,17 +152,3 @@ async function onThemeChange(value: boolean): Promise<void> {
   await theme.setTheme(value ? 'dark' : 'light')
 }
 </script>
-
-<style scoped>
-.search-form-row {
-  gap: var(--dbru-space-2);
-}
-
-.avatar-nav-btn {
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-}
-</style>
-

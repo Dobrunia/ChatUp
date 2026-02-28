@@ -1,11 +1,11 @@
 <template>
   <main class="page-shell">
     <div class="screen-center">
-      <dbr-card class="screen-card form-card ornamented">
-        <h2 class="card-title">Запуск</h2>
-        <p class="card-subtitle">Подготовка сессии и сервисов...</p>
+      <dbr-card class="screen-card form-card">
+        <h2>Запуск</h2>
+        <p>Подготовка сессии и сервисов...</p>
         <dbr-loader />
-        <p v-if="bootWarning" class="notice-bar notice-bar-warning">{{ bootWarning }}</p>
+        <p v-if="bootWarning">{{ bootWarning }}</p>
       </dbr-card>
     </div>
   </main>
