@@ -1,37 +1,33 @@
 <template>
-  <ion-page>
-    <ion-content class="ion-padding">
-      <div class="screen-center">
-        <div class="card screen-card form-card ornamented">
-          <h2 class="card-title">Вход</h2>
-          <p class="card-subtitle">Доступ к диалогам и профилю</p>
-          <div class="form-fields">
-            <input v-model.trim="email" class="input" type="email" placeholder="Почта" />
-            <input v-model="password" class="input" type="password" placeholder="Пароль" />
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" :disabled="sessionStore.authLoading" @click="login">
-              Войти
-            </button>
-            <button class="btn btn-ghost" :disabled="sessionStore.authLoading" @click="register">
-              Создать аккаунт
-            </button>
-          </div>
-          <p v-if="formError" class="notice-bar notice-bar-error">{{ formError }}</p>
-          <p v-if="sessionStore.authError" class="notice-bar notice-bar-error">
-            {{ sessionStore.authError }}
-          </p>
+  <main class="page-shell">
+    <div class="screen-center">
+      <dbr-card class="screen-card form-card ornamented">
+        <h2 class="card-title">Вход</h2>
+        <p class="card-subtitle">Доступ к диалогам и профилю</p>
+        <div class="form-fields">
+          <dbr-input v-model="email" type="email" label="Почта" />
+          <dbr-input v-model="password" type="password" label="Пароль" />
         </div>
-      </div>
-    </ion-content>
-  </ion-page>
+        <div class="form-actions">
+          <dbr-button :disabled="sessionStore.authLoading" @click="login">Войти</dbr-button>
+          <dbr-button variant="ghost" :disabled="sessionStore.authLoading" @click="register">
+            Создать аккаунт
+          </dbr-button>
+        </div>
+        <p v-if="formError" class="notice-bar notice-bar-error">{{ formError }}</p>
+        <p v-if="sessionStore.authError" class="notice-bar notice-bar-error">
+          {{ sessionStore.authError }}
+        </p>
+      </dbr-card>
+    </div>
+  </main>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { IonContent, IonPage } from '@ionic/vue'
-import { useSessionStore } from '../../stores/session-store'
+import { DbrButton, DbrCard, DbrInput } from 'dobruniaui-vue'
+import { useSessionStore } from '../stores/session-store'
 
 const router = useRouter()
 const sessionStore = useSessionStore()

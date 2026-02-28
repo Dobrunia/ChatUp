@@ -1,14 +1,14 @@
-import { createRouter, createWebHistory } from '@ionic/vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   { path: '/', redirect: '/boot' },
-  { path: '/boot', component: () => import('../../modules/boot/BootPage.vue') },
-  { path: '/onboarding', component: () => import('../../modules/onboarding/OnboardingPage.vue') },
-  { path: '/auth', component: () => import('../../modules/auth/AuthPage.vue') },
-  { path: '/conversations', component: () => import('../../modules/conversations/ConversationsPage.vue') },
-  { path: '/search', component: () => import('../../modules/search/SearchPage.vue') },
-  { path: '/chat/:conversationId', component: () => import('../../modules/chat/ChatRoomPage.vue') },
-  { path: '/profile', component: () => import('../../modules/profile/ProfilePage.vue') },
+  { path: '/boot', component: () => import('../../view/BootPage.vue') },
+  { path: '/onboarding', component: () => import('../../view/OnboardingPage.vue') },
+  { path: '/auth', component: () => import('../../view/AuthPage.vue') },
+  { path: '/conversations', component: () => import('../../view/ConversationsPage.vue') },
+  { path: '/search', component: () => import('../../view/SearchPage.vue') },
+  { path: '/chat/:conversationId', component: () => import('../../view/ChatRoomPage.vue') },
+  { path: '/profile', component: () => import('../../view/ProfilePage.vue') },
 ]
 
 export const router = createRouter({

@@ -1,25 +1,24 @@
 <template>
-  <ion-page>
-    <ion-content class="ion-padding">
-      <div class="screen-center">
-        <div class="card screen-card form-card ornamented">
-          <h2 class="card-title">Запуск</h2>
-          <p class="card-subtitle">Подготовка сессии и сервисов...</p>
-          <p v-if="bootWarning" class="notice-bar notice-bar-warning">{{ bootWarning }}</p>
-        </div>
-      </div>
-    </ion-content>
-  </ion-page>
+  <main class="page-shell">
+    <div class="screen-center">
+      <dbr-card class="screen-card form-card ornamented">
+        <h2 class="card-title">Запуск</h2>
+        <p class="card-subtitle">Подготовка сессии и сервисов...</p>
+        <dbr-loader />
+        <p v-if="bootWarning" class="notice-bar notice-bar-warning">{{ bootWarning }}</p>
+      </dbr-card>
+    </div>
+  </main>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { IonContent, IonPage } from '@ionic/vue'
-import { useSessionStore } from '../../stores/session-store'
-import { useProfileStore } from '../../stores/profile-store'
-import { useNetwork } from '../../shared/composables/use-network'
-import { initBootProviders } from '../../app/providers/boot-provider'
+import { DbrCard, DbrLoader } from 'dobruniaui-vue'
+import { useSessionStore } from '../stores/session-store'
+import { useProfileStore } from '../stores/profile-store'
+import { useNetwork } from '../shared/composables/use-network'
+import { initBootProviders } from '../app/providers/boot-provider'
 
 const router = useRouter()
 const sessionStore = useSessionStore()

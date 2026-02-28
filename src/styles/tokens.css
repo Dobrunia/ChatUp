@@ -1,0 +1,7 @@
+:root[data-theme='light'] {
+  --app-bg-image: url('/assets/1.webp');
+}
+
+:root[data-theme='dark'] {
+  --app-bg-image: url('/assets/3.webp');
+}
