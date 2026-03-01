@@ -45,13 +45,15 @@ export async function isUsernameAvailable(username: string, userId: string): Pro
 }
 
 export async function upsertProfile(profile: Profile): Promise<void> {
-  const { error } = await supabase.from('profiles').upsert({
-    id: profile.userId,
-    username: profile.username,
-    display_name: profile.displayName,
-    avatar_url: profile.avatarUrl,
-    notifications_enabled: profile.notificationsEnabled,
-  })
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      username: profile.username,
+      display_name: profile.displayName,
+      avatar_url: profile.avatarUrl,
+      notifications_enabled: profile.notificationsEnabled,
+    })
+    .eq('id', profile.userId)
   if (error) {
     throw error
   }

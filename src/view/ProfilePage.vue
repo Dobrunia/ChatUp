@@ -52,15 +52,16 @@
       </div>
 
       <div class="profile-card__actions">
+        <DbrButton variant="danger" @click="handleLogout">Выйти</DbrButton>
+        <span v-if="saveMessage" class="dbru-text-sm dbru-text-muted">{{ saveMessage }}</span>
         <DbrButton
+          variant="primary"
           :disabled="saving || !isDirty"
-          :variant="isDirty ? 'primary' : 'ghost'"
           @click="saveProfile"
         >
           {{ saving ? 'Сохраняю...' : 'Сохранить' }}
         </DbrButton>
       </div>
-      <span v-if="saveMessage" class="dbru-text-sm dbru-text-muted">{{ saveMessage }}</span>
     </DbrCard>
 
     <div v-else class="page__state dbru-surface dbru-text-sm dbru-text-muted">
@@ -71,11 +72,14 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { DbrAvatar, DbrButton, DbrCard, DbrCheckbox, DbrInput, DbrLoader } from 'dobruniaui-vue'
 import { useProfileStore } from '../stores/profile-store'
 import { useSessionStore } from '../stores/session-store'
+import { useSwipeBack } from '../shared/composables/use-swipe-back'
 
+const router = useRouter()
 const sessionStore = useSessionStore()
 const profileStore = useProfileStore()
 
@@ -135,6 +139,11 @@ async function saveProfile(): Promise<void> {
   }
 }
 
+async function handleLogout(): Promise<void> {
+  await sessionStore.logout()
+  await router.push({ name: 'login' })
+}
+
 onMounted(async () => {
   if (!userId.value) return
   loadError.value = null
@@ -144,6 +153,8 @@ onMounted(async () => {
     loadError.value = error instanceof Error ? error.message : 'Не удалось загрузить профиль'
   }
 })
+
+useSwipeBack()
 </script>
 
 <style scoped>
@@ -187,10 +198,14 @@ onMounted(async () => {
 .profile-card__actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   gap: var(--dbru-space-3);
   padding-top: var(--dbru-space-3);
   border-top: 1px solid var(--dbru-color-border);
+}
+
+.profile-card__actions .dbru-text-sm {
+  flex: 1;
+  text-align: center;
 }
 
 .profile-card__input-icon {

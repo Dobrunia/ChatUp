@@ -10,14 +10,24 @@
       </RouterLink>
       <DbrThemeToggle size="sm" shape="rounded" />
       <RouterLink to="/profile" aria-label="Профиль">
-        <DbrAvatar name="Профиль" size="sm" shape="rounded" />
+        <DbrAvatar
+          :src="profile?.avatarUrl ?? undefined"
+          :name="profile?.displayName ?? 'Профиль'"
+          size="sm"
+          shape="rounded"
+        />
       </RouterLink>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { DbrAvatar, DbrThemeToggle } from 'dobruniaui-vue';
+import { storeToRefs } from 'pinia'
+import { DbrAvatar, DbrThemeToggle } from 'dobruniaui-vue'
+import { useProfileStore } from '../stores/profile-store'
+
+const profileStore = useProfileStore()
+const { profile } = storeToRefs(profileStore)
 </script>
 
 <style scoped>

@@ -19,7 +19,7 @@ export const useChatStore = defineStore('chat', () => {
     activeConversationId.value = conversationId
     await chat.loadMessages(conversationId)
     realtime.startConversation(conversationId, async () => {
-      await chat.loadMessages(conversationId)
+      await chat.refreshMessages(conversationId)
     })
   }
 

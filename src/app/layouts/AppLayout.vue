@@ -14,12 +14,15 @@ import { App as CapacitorApp } from '@capacitor/app'
 import AppHeader from '../../components/AppHeader.vue'
 import { useSessionStore } from '../../stores/session-store'
 import { useConversationsStore } from '../../stores/conversations-store'
+import { useProfileStore } from '../../stores/profile-store'
 import { useAppRealtime } from '../../shared/composables/use-app-realtime'
+import { setPresence } from '../../shared/api/presence-api'
 import { initBootProviders } from '../providers/boot-provider'
 
 const route = useRoute()
 const sessionStore = useSessionStore()
 const conversationsStore = useConversationsStore()
+const profileStore = useProfileStore()
 const appRealtime = useAppRealtime()
 
 const isFullscreen = computed(() => route.meta.fullscreen === true)
@@ -32,12 +35,17 @@ onMounted(async () => {
 
   await conversationsStore.load(userId)
   conversationsStore.startRealtime(userId)
+  void profileStore.load()
   void initBootProviders(userId)
 
-  // Re-sync when app returns to foreground (e.g. after a call or lock screen)
   appStateListener = await CapacitorApp.addListener('appStateChange', ({ isActive }) => {
-    if (isActive && sessionStore.userId) {
-      void conversationsStore.load(sessionStore.userId)
+    const uid = sessionStore.userId
+    if (!uid) return
+    if (isActive) {
+      void conversationsStore.load(uid)
+      void setPresence(uid, true)
+    } else {
+      void setPresence(uid, false)
     }
   })
 })
@@ -46,6 +54,10 @@ onUnmounted(() => {
   conversationsStore.stopRealtime()
   appStateListener?.remove()
   appRealtime.stopAll()
+  const uid = sessionStore.userId
+  if (uid) {
+    void setPresence(uid, false)
+  }
 })
 </script>
 

@@ -49,13 +49,17 @@ export const router = createRouter({
   routes,
 });
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const activeElement = document.activeElement;
   if (activeElement instanceof HTMLElement) {
     activeElement.blur();
   }
 
   const sessionStore = useSessionStore();
+  // Wait for session restore to finish before making auth decisions.
+  // On first navigation this suspends until sessionStore.boot() resolves in main.ts.
+  await sessionStore.awaitBoot();
+
   const isAuthenticated = sessionStore.userId !== null;
 
   if (!isAuthenticated && !to.meta.public) {

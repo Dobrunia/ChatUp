@@ -9,7 +9,7 @@ const messageLoading = ref(false)
 const messageOlderLoading = ref(false)
 const hasMoreMessages = ref(true)
 const activeConversationId = ref<string | null>(null)
-const PAGE_SIZE = 30
+const PAGE_SIZE = 20
 
 export function useChat() {
   async function loadMessages(conversationId: string): Promise<void> {
@@ -22,6 +22,13 @@ export function useChat() {
     } finally {
       messageLoading.value = false
     }
+  }
+
+  // Background refresh — no loading spinner, preserves scroll position feel
+  async function refreshMessages(conversationId: string): Promise<void> {
+    const chunk = await fetchMessages(conversationId, PAGE_SIZE)
+    messages.value = chunk
+    hasMoreMessages.value = chunk.length >= PAGE_SIZE
   }
 
   async function loadOlderMessages(): Promise<boolean> {
@@ -140,6 +147,7 @@ export function useChat() {
     messageOlderLoading,
     hasMoreMessages,
     loadMessages,
+    refreshMessages,
     loadOlderMessages,
     sendTextMessage,
     sendImageMessages,

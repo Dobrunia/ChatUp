@@ -10,10 +10,23 @@ export const useSessionStore = defineStore('session', () => {
   const onboardingDone = ref(false)
   const userId = computed(() => auth.session.value?.user.id ?? null)
 
+  // Resolves once boot() finishes, regardless of success/failure.
+  // Guards await this before checking auth so reload doesn't redirect to login.
+  let bootResolve!: () => void
+  const bootPromise = new Promise<void>((res) => { bootResolve = res })
+
   async function boot(): Promise<void> {
-    const { value } = await Preferences.get({ key: ONBOARDING_DONE_KEY })
-    onboardingDone.value = value === '1'
-    await auth.bootSession()
+    try {
+      const { value } = await Preferences.get({ key: ONBOARDING_DONE_KEY })
+      onboardingDone.value = value === '1'
+      await auth.bootSession()
+    } finally {
+      bootResolve()
+    }
+  }
+
+  function awaitBoot(): Promise<void> {
+    return bootPromise
   }
 
   async function login(email: string, password: string): Promise<void> {
@@ -40,6 +53,7 @@ export const useSessionStore = defineStore('session', () => {
     onboardingDone,
     userId,
     boot,
+    awaitBoot,
     login,
     register,
     logout,
