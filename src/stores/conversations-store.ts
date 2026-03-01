@@ -1,17 +1,13 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useConversations } from '../shared/composables/use-conversations'
-import type { RealtimeChannel } from '@supabase/supabase-js'
-import type { Conversation } from '../shared/types/chat'
-import { supabase } from '../shared/api/supabase-client'
-
+import { useAppRealtime } from '../shared/composables/use-app-realtime'
 export const useConversationsStore = defineStore('conversations', () => {
   const composable = useConversations()
+  const realtime = useAppRealtime()
   const activeConversationId = ref<string | null>(null)
-  const realtimeChannel = ref<RealtimeChannel | null>(null)
-  const realtimeUserId = ref<string | null>(null)
   const reloadTimer = ref<ReturnType<typeof setTimeout> | null>(null)
-  const fallbackPoller = ref<ReturnType<typeof setInterval> | null>(null)
+
   const sortedConversations = computed(() =>
     [...composable.conversations.value].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
   )
@@ -20,41 +16,19 @@ export const useConversationsStore = defineStore('conversations', () => {
     await composable.loadConversations(userId)
   }
 
-  function scheduleRealtimeReload(userId: string): void {
+  function scheduleReload(userId: string): void {
     if (reloadTimer.value) {
       clearTimeout(reloadTimer.value)
       reloadTimer.value = null
     }
+    // Debounce rapid-fire events (e.g. multiple messages arriving at once)
     reloadTimer.value = setTimeout(() => {
       void load(userId)
-    }, 180)
+    }, 200)
   }
 
   function startRealtime(userId: string): void {
-    if (realtimeChannel.value && realtimeUserId.value === userId) {
-      return
-    }
-    stopRealtime()
-    realtimeUserId.value = userId
-    const channel = supabase
-      .channel(`conversations-global:${userId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
-        scheduleRealtimeReload(userId)
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, () => {
-        scheduleRealtimeReload(userId)
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'conversation_members' }, () => {
-        scheduleRealtimeReload(userId)
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'conversation_members' }, () => {
-        scheduleRealtimeReload(userId)
-      })
-      .subscribe()
-    realtimeChannel.value = channel
-    fallbackPoller.value = setInterval(() => {
-      void load(userId)
-    }, 2500)
+    realtime.startGlobal(userId, () => scheduleReload(userId))
   }
 
   function stopRealtime(): void {
@@ -62,15 +36,7 @@ export const useConversationsStore = defineStore('conversations', () => {
       clearTimeout(reloadTimer.value)
       reloadTimer.value = null
     }
-    if (fallbackPoller.value) {
-      clearInterval(fallbackPoller.value)
-      fallbackPoller.value = null
-    }
-    if (realtimeChannel.value) {
-      realtimeChannel.value.unsubscribe()
-      realtimeChannel.value = null
-    }
-    realtimeUserId.value = null
+    realtime.stopGlobal()
   }
 
   async function open(currentUserId: string, peerUserId: string): Promise<string> {
@@ -88,17 +54,9 @@ export const useConversationsStore = defineStore('conversations', () => {
     conversationId?: string,
     lastReadAt: string = new Date().toISOString(),
   ): Promise<void> {
-    const targetConversationId = conversationId ?? activeConversationId.value
-    if (!targetConversationId) {
-      return
-    }
-    await composable.setConversationRead(targetConversationId, userId, lastReadAt)
-  }
-
-  function patchConversation(update: Conversation): void {
-    const map = new Map(composable.conversations.value.map((item) => [item.id, item]))
-    map.set(update.id, update)
-    composable.conversations.value = [...map.values()]
+    const targetId = conversationId ?? activeConversationId.value
+    if (!targetId) return
+    await composable.setConversationRead(targetId, userId, lastReadAt)
   }
 
   return {
@@ -112,6 +70,5 @@ export const useConversationsStore = defineStore('conversations', () => {
     open,
     setActiveConversation,
     markRead,
-    patchConversation,
   }
 })

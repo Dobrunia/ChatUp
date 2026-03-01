@@ -1,10 +1,12 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
-import type { RecordingEventPayload, TypingEventPayload } from '../types/chat'
+import type { PresenceState, RecordingEventPayload, TypingEventPayload } from '../types/chat'
 import { supabase } from './supabase-client'
 
 type MessageInsertHandler = (messageId: string) => void
 type TypingHandler = (payload: TypingEventPayload) => void
 type RecordingHandler = (payload: RecordingEventPayload) => void
+type ConversationsUpdateHandler = () => void
+type PresenceUpdateHandler = (state: PresenceState) => void
 
 export function subscribeMessages(conversationId: string, handler: MessageInsertHandler): RealtimeChannel {
   return supabase
@@ -49,12 +51,62 @@ export function subscribeRecording(
     .subscribe()
 }
 
-export async function sendTyping(payload: TypingEventPayload): Promise<void> {
-  const channel = supabase.channel(`typing:${payload.conversationId}`)
+export async function sendTyping(
+  channel: RealtimeChannel,
+  payload: TypingEventPayload,
+): Promise<void> {
   await channel.send({ type: 'broadcast', event: 'typing', payload })
 }
 
-export async function sendRecording(payload: RecordingEventPayload): Promise<void> {
-  const channel = supabase.channel(`recording:${payload.conversationId}`)
+export async function sendRecording(
+  channel: RealtimeChannel,
+  payload: RecordingEventPayload,
+): Promise<void> {
   await channel.send({ type: 'broadcast', event: 'recording', payload })
+}
+
+export function subscribeConversationsGlobal(
+  userId: string,
+  handler: ConversationsUpdateHandler,
+): RealtimeChannel {
+  return supabase
+    .channel(`conversations-global:${userId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, handler)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, handler)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'conversation_members' },
+      handler,
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'conversation_members' },
+      handler,
+    )
+    .subscribe()
+}
+
+export function subscribePeerPresence(
+  peerUserId: string,
+  handler: PresenceUpdateHandler,
+): RealtimeChannel {
+  return supabase
+    .channel(`peer-presence:${peerUserId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'presence',
+        filter: `user_id=eq.${peerUserId}`,
+      },
+      (payload) => {
+        handler({
+          userId: payload.new.user_id as string,
+          isOnline: payload.new.is_online as boolean,
+          updatedAt: payload.new.updated_at as string,
+        })
+      },
+    )
+    .subscribe()
 }

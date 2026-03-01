@@ -57,6 +57,20 @@ export async function upsertProfile(profile: Profile): Promise<void> {
   }
 }
 
+export async function fetchProfilesBatch(userIds: string[]): Promise<Profile[]> {
+  if (userIds.length === 0) {
+    return []
+  }
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id,username,display_name,avatar_url,notifications_enabled')
+    .in('id', userIds)
+  if (error) {
+    throw error
+  }
+  return (data as ProfileRow[]).map(normalizeProfile)
+}
+
 export async function saveInitialDisplayName(userId: string, displayName: string): Promise<void> {
   const { error } = await supabase
     .from('profiles')

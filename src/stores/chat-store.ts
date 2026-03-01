@@ -1,35 +1,31 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useChat } from '../shared/composables/use-chat'
-import { useRealtime } from '../shared/composables/use-realtime'
+import { useAppRealtime } from '../shared/composables/use-app-realtime'
 
 export const useChatStore = defineStore('chat', () => {
   const chat = useChat()
-  const realtime = useRealtime()
-  const typingUsers = ref<string[]>([])
-  const recordingUsers = ref<string[]>([])
-  const activeCleanup = ref<null | (() => void)>(null)
+  const realtime = useAppRealtime()
+  const activeConversationId = ref<string | null>(null)
+
+  const typingUsers = computed(
+    () => realtime.typingByConversation.value[activeConversationId.value ?? ''] ?? [],
+  )
+  const recordingUsers = computed(
+    () => realtime.recordingByConversation.value[activeConversationId.value ?? ''] ?? [],
+  )
 
   async function enterConversation(conversationId: string): Promise<void> {
-    if (activeCleanup.value) {
-      activeCleanup.value()
-      activeCleanup.value = null
-    }
+    activeConversationId.value = conversationId
     await chat.loadMessages(conversationId)
-    activeCleanup.value = realtime.subscribeToConversation(conversationId, async () => {
+    realtime.startConversation(conversationId, async () => {
       await chat.loadMessages(conversationId)
     })
   }
 
   function leaveConversation(): void {
-    if (activeCleanup.value) {
-      activeCleanup.value()
-      activeCleanup.value = null
-    }
-  }
-
-  async function reload(conversationId: string): Promise<void> {
-    await chat.loadMessages(conversationId)
+    activeConversationId.value = null
+    realtime.stopConversation()
   }
 
   async function loadOlder(): Promise<boolean> {
@@ -40,7 +36,11 @@ export const useChatStore = defineStore('chat', () => {
     await chat.sendTextMessage(conversationId, senderId, text)
   }
 
-  async function sendImages(conversationId: string, senderId: string, files: File[]): Promise<void> {
+  async function sendImages(
+    conversationId: string,
+    senderId: string,
+    files: File[],
+  ): Promise<void> {
     await chat.sendImageMessages(conversationId, senderId, files)
   }
 
@@ -60,12 +60,14 @@ export const useChatStore = defineStore('chat', () => {
   async function onTyping(conversationId: string, userId: string): Promise<void> {
     await realtime.emitTypingStart(conversationId, userId)
     await realtime.emitTypingDebouncedStop(conversationId, userId)
-    typingUsers.value = realtime.typingByConversation.value[conversationId] ?? []
   }
 
-  async function setRecording(conversationId: string, userId: string, state: 'start' | 'stop'): Promise<void> {
+  async function setRecording(
+    conversationId: string,
+    userId: string,
+    state: 'start' | 'stop',
+  ): Promise<void> {
     await realtime.emitRecording(conversationId, userId, state)
-    recordingUsers.value = realtime.recordingByConversation.value[conversationId] ?? []
   }
 
   return {
@@ -77,7 +79,6 @@ export const useChatStore = defineStore('chat', () => {
     recordingUsers,
     enterConversation,
     leaveConversation,
-    reload,
     loadOlder,
     sendText,
     sendImages,

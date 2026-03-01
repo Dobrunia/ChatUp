@@ -415,3 +415,41 @@ for update
 to authenticated
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
+
+-- 11) PRESENCE (online status per user)
+create table if not exists public.presence (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  is_online boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists trg_presence_updated_at on public.presence;
+create trigger trg_presence_updated_at
+before update on public.presence
+for each row execute function public.set_updated_at();
+
+alter table public.presence enable row level security;
+
+-- Anyone can read presence (needed for peer online status in chat)
+drop policy if exists "presence_select_all" on public.presence;
+create policy "presence_select_all"
+on public.presence
+for select
+to authenticated
+using (true);
+
+-- Users can upsert only their own row
+drop policy if exists "presence_insert_own" on public.presence;
+create policy "presence_insert_own"
+on public.presence
+for insert
+to authenticated
+with check (user_id = auth.uid());
+
+drop policy if exists "presence_update_own" on public.presence;
+create policy "presence_update_own"
+on public.presence
+for update
+to authenticated
+using (user_id = auth.uid())
+with check (user_id = auth.uid());

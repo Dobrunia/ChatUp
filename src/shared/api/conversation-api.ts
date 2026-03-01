@@ -150,23 +150,6 @@ async function fetchPeerReadAtMap(
   return map
 }
 
-export async function fetchPeerLastReadAt(
-  conversationId: string,
-  currentUserId: string,
-): Promise<string | null> {
-  const { data, error } = await supabase
-    .from('conversation_members')
-    .select('last_read_at')
-    .eq('conversation_id', conversationId)
-    .neq('user_id', currentUserId)
-    .limit(1)
-    .maybeSingle<{ last_read_at: string | null }>()
-  if (error) {
-    throw error
-  }
-  return data?.last_read_at ?? null
-}
-
 export async function fetchConversations(userId: string): Promise<Conversation[]> {
   try {
     await ensureSelfMemberships(userId)

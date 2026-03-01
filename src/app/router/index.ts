@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import AppLayout from '../layouts/AppLayout.vue';
 import ConversationsPage from '../../view/ConversationsPage.vue';
 import ProfilePage from '../../view/ProfilePage.vue';
+import ChatPage from '../../view/ChatPage.vue';
 
 const routes = [
   {
@@ -17,6 +18,12 @@ const routes = [
         path: 'profile',
         name: 'profile',
         component: ProfilePage,
+      },
+      {
+        path: 'chat/:conversationId',
+        name: 'chat',
+        component: ChatPage,
+        meta: { fullscreen: true },
       },
     ],
   },
