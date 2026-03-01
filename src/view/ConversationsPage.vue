@@ -4,10 +4,27 @@
       <h2 class="page__title dbru-text-lg dbru-text-main">Диалоги</h2>
       <DbrInput
         v-model="searchQuery"
-        placeholder="Поиск пользователя..."
         name="search"
+        label="Поиск переписки..."
+        iconPosition="left"
         @input="handleSearch"
-      />
+      >
+        <template #icon>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+        </template>
+      </DbrInput>
     </div>
 
     <!-- Existing conversations -->
@@ -16,7 +33,10 @@
     </div>
 
     <template v-else>
-      <div v-if="sortedConversations.length === 0 && !searchQuery" class="page__empty dbru-surface dbru-text-sm dbru-text-muted">
+      <div
+        v-if="sortedConversations.length === 0 && !searchQuery"
+        class="page__empty dbru-surface dbru-text-sm dbru-text-muted"
+      >
         Нет диалогов. Найдите пользователя выше и начните чат.
       </div>
 
@@ -24,8 +44,8 @@
         <DbrChatListItem
           v-for="conv in sortedConversations"
           :key="conv.id"
-          :avatar="peerProfiles[getPeerId(conv)]?.avatarUrl ?? ''"
-          :avatarAlt="peerProfiles[getPeerId(conv)]?.displayName ?? ''"
+          :avatar="peerProfiles[getPeerId(conv)]?.avatarUrl || undefined"
+          :avatarAlt="getDisplayName(peerProfiles[getPeerId(conv)])"
           :name="getDisplayName(peerProfiles[getPeerId(conv)])"
           :lastMessage="getLastMessagePreview(conv)"
           :timestamp="new Date(conv.updatedAt)"
@@ -33,7 +53,7 @@
           :isOutgoing="conv.lastMessage?.senderId === currentUserId"
           :status="presenceStore.isOnline(getPeerId(conv)) ? 'online' : 'offline'"
           :unreadCount="conv.unreadCount"
-          :loading="profilesLoading"
+          :loading="isProfileLoading(conv)"
           @click="openConversation(conv.id)"
         />
       </div>
@@ -50,8 +70,8 @@
             <DbrChatListItem
               v-for="user in searchStore.results"
               :key="user.userId"
-              :avatar="user.avatarUrl ?? ''"
-              :avatarAlt="user.displayName ?? ''"
+              :avatar="user.avatarUrl || undefined"
+              :avatarAlt="getDisplayName(user)"
               :name="getDisplayName(user)"
               :status="presenceStore.isOnline(user.userId) ? 'online' : 'offline'"
               @click="startConversation(user.userId)"
@@ -68,119 +88,120 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { DbrChatListItem, DbrInput, DbrLoader } from 'dobruniaui-vue'
-import { useConversationsStore } from '../stores/conversations-store'
-import { useSearchStore } from '../stores/search-store'
-import { useSessionStore } from '../stores/session-store'
-import { usePresenceStore } from '../stores/presence-store'
-import { fetchProfilesBatch } from '../shared/api/profile-api'
-import type { Conversation, Profile } from '../shared/types/chat'
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import { DbrChatListItem, DbrInput, DbrLoader } from 'dobruniaui-vue';
+import { useConversationsStore } from '../stores/conversations-store';
+import { useSearchStore } from '../stores/search-store';
+import { useSessionStore } from '../stores/session-store';
+import { usePresenceStore } from '../stores/presence-store';
+import { fetchProfilesBatch } from '../shared/api/profile-api';
+import type { Conversation, Profile } from '../shared/types/chat';
 
-const router = useRouter()
-const conversationsStore = useConversationsStore()
-const searchStore = useSearchStore()
-const sessionStore = useSessionStore()
-const presenceStore = usePresenceStore()
+const router = useRouter();
+const conversationsStore = useConversationsStore();
+const searchStore = useSearchStore();
+const sessionStore = useSessionStore();
+const presenceStore = usePresenceStore();
 
-const { sortedConversations } = storeToRefs(conversationsStore)
+const { sortedConversations } = storeToRefs(conversationsStore);
 
-const currentUserId = sessionStore.userId!
-const searchQuery = ref('')
-const peerProfiles = ref<Record<string, Profile>>({})
-const profilesLoading = ref(false)
+const currentUserId = sessionStore.userId!;
+const searchQuery = ref('');
+const peerProfiles = ref<Record<string, Profile>>({});
 
 function getPeerId(conv: Conversation): string {
-  return conv.memberIds.find((id) => id !== currentUserId) ?? conv.memberIds[0]
+  return conv.memberIds.find((id) => id !== currentUserId) ?? conv.memberIds[0];
+}
+
+function isProfileLoading(conv: Conversation): boolean {
+  return !(getPeerId(conv) in peerProfiles.value);
 }
 
 function getDisplayName(profile: Profile | undefined): string {
-  if (!profile) return '...'
-  return profile.displayName ?? profile.username ?? 'Пользователь'
+  if (!profile) return '...';
+  return profile.displayName ?? profile.username ?? 'Пользователь';
 }
 
 function getLastMessagePreview(
-  conv: Conversation,
+  conv: Conversation
 ): { text?: string; type?: 'text' | 'image' | 'file' | 'voice' } | undefined {
-  if (!conv.lastMessage) return undefined
-  const msg = conv.lastMessage
-  if (msg.type === 'text') return { text: msg.body ?? '', type: 'text' }
-  if (msg.type === 'image') return { text: 'Фото', type: 'image' }
-  if (msg.type === 'audio') return { text: 'Голосовое', type: 'voice' }
-  return { text: '', type: 'text' }
+  if (!conv.lastMessage) return undefined;
+  const msg = conv.lastMessage;
+  if (msg.type === 'text') return { text: msg.body ?? '', type: 'text' };
+  if (msg.type === 'image') return { text: 'Фото', type: 'image' };
+  if (msg.type === 'audio') return { text: 'Голосовое', type: 'voice' };
+  return { text: '', type: 'text' };
 }
 
 function getMessageStatus(conv: Conversation): 'unread' | 'read' | 'error' {
-  const msg = conv.lastMessage
-  if (!msg) return 'read'
-  if (msg.status === 'failed') return 'error'
-  if (conv.unreadCount > 0) return 'unread'
-  return 'read'
+  const msg = conv.lastMessage;
+  if (!msg) return 'read';
+  if (msg.status === 'failed') return 'error';
+  if (conv.unreadCount > 0) return 'unread';
+  return 'read';
 }
 
 async function loadPeerProfiles(): Promise<void> {
-  const peerIds = sortedConversations.value.map(getPeerId)
-  if (peerIds.length === 0) return
+  const peerIds = sortedConversations.value.map(getPeerId);
+  if (peerIds.length === 0) return;
 
-  profilesLoading.value = true
   try {
-    const profiles = await fetchProfilesBatch(peerIds)
-    const next: Record<string, Profile> = {}
+    const profiles = await fetchProfilesBatch(peerIds);
+    const next: Record<string, Profile> = {};
     profiles.forEach((p) => {
-      next[p.userId] = p
-    })
-    peerProfiles.value = next
-    // Load initial presence (no realtime subscription — the list refreshes via conversations realtime)
-    await presenceStore.loadBatch(peerIds)
-  } finally {
-    profilesLoading.value = false
+      next[p.userId] = p;
+    });
+    peerProfiles.value = { ...peerProfiles.value, ...next };
+    await presenceStore.loadBatch(peerIds);
+  } catch {
+    // profiles stay as-is; items keep their loading skeleton
   }
 }
 
-let searchTimer: ReturnType<typeof setTimeout> | null = null
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 function handleSearch(): void {
   if (searchTimer) {
-    clearTimeout(searchTimer)
-    searchTimer = null
+    clearTimeout(searchTimer);
+    searchTimer = null;
   }
   if (!searchQuery.value.trim()) {
-    return
+    return;
   }
   searchTimer = setTimeout(async () => {
-    await searchStore.run(searchQuery.value)
-  }, 350)
+    await searchStore.run(searchQuery.value);
+  }, 350);
 }
 
 async function openConversation(conversationId: string): Promise<void> {
-  conversationsStore.setActiveConversation(conversationId)
-  await router.push({ name: 'chat', params: { conversationId } })
+  conversationsStore.setActiveConversation(conversationId);
+  await router.push({ name: 'chat', params: { conversationId } });
 }
 
 async function startConversation(peerUserId: string): Promise<void> {
-  if (!currentUserId) return
-  const conversationId = await conversationsStore.open(currentUserId, peerUserId)
-  searchQuery.value = ''
-  await router.push({ name: 'chat', params: { conversationId } })
+  if (!currentUserId) return;
+  const conversationId = await conversationsStore.open(currentUserId, peerUserId);
+  searchQuery.value = '';
+  await router.push({ name: 'chat', params: { conversationId } });
 }
 
 // Reload peer profiles whenever conversations change
 watch(sortedConversations, () => {
-  void loadPeerProfiles()
-})
+  void loadPeerProfiles();
+});
 
 onMounted(async () => {
-  await loadPeerProfiles()
-})
+  await loadPeerProfiles();
+});
 
 onUnmounted(() => {
   if (searchTimer) {
-    clearTimeout(searchTimer)
-    searchTimer = null
+    clearTimeout(searchTimer);
+    searchTimer = null;
   }
-})
+});
 </script>
 
 <style scoped>
