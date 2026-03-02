@@ -64,11 +64,11 @@
           <DbrLoader />
         </div>
 
-        <div v-else-if="searchStore.results.length > 0">
+        <div v-else-if="searchResults.length > 0">
           <h3 class="page__section-title dbru-text-sm dbru-text-muted">Найти пользователя</h3>
           <div class="page__list">
             <DbrChatListItem
-              v-for="user in searchStore.results"
+              v-for="user in searchResults"
               :key="user.userId"
               :avatar="user.avatarUrl || undefined"
               :avatarAlt="getDisplayName(user)"
@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { DbrChatListItem, DbrInput, DbrLoader } from 'dobruniaui-vue';
@@ -110,6 +110,11 @@ const { sortedConversations } = storeToRefs(conversationsStore);
 const currentUserId = sessionStore.userId!;
 const searchQuery = ref('');
 const peerProfiles = ref<Record<string, Profile>>({});
+
+// Exclude self from search results
+const searchResults = computed(() =>
+  searchStore.results.filter((u) => u.userId !== currentUserId),
+);
 
 function getPeerId(conv: Conversation): string {
   return conv.memberIds.find((id) => id !== currentUserId) ?? conv.memberIds[0];
@@ -139,8 +144,12 @@ function getMessageStatus(conv: Conversation): 'unread' | 'read' | 'error' {
   const msg = conv.lastMessage;
   if (!msg) return 'read';
   if (msg.status === 'failed') return 'error';
-  if (conv.unreadCount > 0) return 'unread';
-  return 'read';
+  if (msg.senderId === currentUserId) {
+    // Outgoing: show read indicator only when peer actually read it
+    return msg.status === 'read' ? 'read' : 'unread';
+  }
+  // Incoming: show unread badge when current user has unread messages
+  return conv.unreadCount > 0 ? 'unread' : 'read';
 }
 
 async function loadPeerProfiles(): Promise<void> {

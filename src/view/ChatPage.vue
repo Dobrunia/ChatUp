@@ -38,7 +38,7 @@
 
         <template v-for="item in messageItems" :key="item.key">
           <div v-if="item.kind === 'divider'" class="chat-page__divider">
-            <DbrBadge variant="ghost">{{ item.label }}</DbrBadge>
+            <DbrBadge variant="ghost" :text="item.label" />
           </div>
           <DbrChatBubble
             v-else
@@ -247,20 +247,27 @@ watch(
   },
 )
 
-onMounted(async () => {
-  await chatStore.enterConversation(conversationId)
-  await scrollToBottom()
-  await conversationsStore.markRead(currentUserId, conversationId)
-
-  const peerId = peerUserId.value
-  if (peerId) {
+// AppLayout (parent) mounts after ChatPage (child), so conversations may not be
+// loaded yet when onMounted runs. Watch reactively so profile loads as soon as
+// the conversation appears in the store (or immediately if already there).
+watch(
+  peerUserId,
+  async (peerId) => {
+    if (!peerId) return
     try {
       peerProfile.value = await fetchProfile(peerId)
     } catch {
       // Show placeholder if profile fetch fails
     }
     await presenceStore.trackPeer(peerId)
-  }
+  },
+  { immediate: true },
+)
+
+onMounted(async () => {
+  await chatStore.enterConversation(conversationId)
+  await scrollToBottom()
+  await conversationsStore.markRead(currentUserId, conversationId)
 })
 
 onUnmounted(() => {

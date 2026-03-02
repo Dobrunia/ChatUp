@@ -52,15 +52,20 @@
       </div>
 
       <div class="profile-card__actions">
-        <DbrButton variant="danger" @click="handleLogout">Выйти</DbrButton>
-        <span v-if="saveMessage" class="dbru-text-sm dbru-text-muted">{{ saveMessage }}</span>
-        <DbrButton
-          variant="primary"
-          :disabled="saving || !isDirty"
-          @click="saveProfile"
-        >
-          {{ saving ? 'Сохраняю...' : 'Сохранить' }}
-        </DbrButton>
+        <span
+          v-if="saveMessage"
+          :class="['profile-card__save-message dbru-text-sm', saveIsError ? 'profile-card__save-message--error' : 'profile-card__save-message--success']"
+        >{{ saveMessage }}</span>
+        <div class="profile-card__action-row">
+          <DbrButton variant="danger" @click="handleLogout">Выйти</DbrButton>
+          <DbrButton
+            variant="primary"
+            :disabled="saving || !isDirty"
+            @click="saveProfile"
+          >
+            {{ saving ? 'Сохраняю...' : 'Сохранить' }}
+          </DbrButton>
+        </div>
       </div>
     </DbrCard>
 
@@ -89,6 +94,7 @@ const userId = computed(() => sessionStore.userId)
 const loadError = ref<string | null>(null)
 const saving = ref(false)
 const saveMessage = ref<string | null>(null)
+const saveIsError = ref(false)
 
 const form = reactive({
   displayName: '',
@@ -132,8 +138,10 @@ async function saveProfile(): Promise<void> {
       notificationsEnabled: form.notificationsEnabled,
     })
     saveMessage.value = 'Сохранено'
+    saveIsError.value = false
   } catch (error) {
     saveMessage.value = error instanceof Error ? error.message : 'Ошибка сохранения'
+    saveIsError.value = true
   } finally {
     saving.value = false
   }
@@ -197,15 +205,28 @@ useSwipeBack()
 
 .profile-card__actions {
   display: flex;
-  align-items: center;
-  gap: var(--dbru-space-3);
+  flex-direction: column;
+  gap: var(--dbru-space-2);
   padding-top: var(--dbru-space-3);
   border-top: 1px solid var(--dbru-color-border);
 }
 
-.profile-card__actions .dbru-text-sm {
-  flex: 1;
+.profile-card__save-message {
   text-align: center;
+}
+
+.profile-card__save-message--success {
+  color: var(--dbru-color-primary);
+}
+
+.profile-card__save-message--error {
+  color: var(--dbru-color-danger);
+}
+
+.profile-card__action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .profile-card__input-icon {
