@@ -9,7 +9,7 @@
         Чаты
       </RouterLink>
       <DbrThemeToggle size="sm" shape="rounded" />
-      <RouterLink to="/profile" aria-label="Профиль">
+      <RouterLink to="/profile" aria-label="Профиль" style="display: flex; align-items: center;">
         <DbrAvatar
           :src="profile?.avatarUrl ?? undefined"
           :name="profile?.displayName ?? 'Профиль'"
