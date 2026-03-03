@@ -1,7 +1,7 @@
 <template>
   <header class="app-header dbru-surface">
     <div class="app-header__left">
-      <h1 class="app-header__title dbru-text-base dbru-text-main">ChatUp</h1>
+      <AppBrand size="sm" />
     </div>
 
     <div class="app-header__right">
@@ -25,6 +25,7 @@
 import { storeToRefs } from 'pinia'
 import { DbrAvatar, DbrThemeToggle } from 'dobruniaui-vue'
 import { useProfileStore } from '../stores/profile-store'
+import AppBrand from './AppBrand.vue'
 
 const profileStore = useProfileStore()
 const { profile } = storeToRefs(profileStore)
@@ -47,11 +48,6 @@ const { profile } = storeToRefs(profileStore)
 
 .app-header__left {
   min-width: 0;
-}
-
-.app-header__title {
-  margin: 0;
-  font-weight: var(--dbru-font-weight-semibold);
 }
 
 .app-header__right {

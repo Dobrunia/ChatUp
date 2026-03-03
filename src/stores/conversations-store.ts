@@ -16,6 +16,10 @@ export const useConversationsStore = defineStore('conversations', () => {
     await composable.loadConversations(userId)
   }
 
+  async function refresh(userId: string): Promise<void> {
+    await composable.refreshConversations(userId)
+  }
+
   function scheduleReload(userId: string): void {
     if (reloadTimer.value) {
       clearTimeout(reloadTimer.value)
@@ -65,6 +69,7 @@ export const useConversationsStore = defineStore('conversations', () => {
     activeConversationId,
     sortedConversations,
     load,
+    refresh,
     startRealtime,
     stopRealtime,
     open,

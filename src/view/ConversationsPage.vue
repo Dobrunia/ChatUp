@@ -202,6 +202,8 @@ watch(sortedConversations, () => {
 });
 
 onMounted(async () => {
+  // Silent refresh — picks up messages sent while in ChatPage without showing the loading spinner
+  void conversationsStore.refresh(currentUserId)
   await loadPeerProfiles();
 });
 

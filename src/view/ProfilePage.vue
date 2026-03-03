@@ -1,6 +1,22 @@
 <template>
   <section class="page">
-    <h2 class="page__title dbru-text-lg dbru-text-main">Профиль</h2>
+    <div class="page__nav">
+      <DbrIconButton variant="ghost" size="sm" aria-label="Назад" @click="router.back()">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+      </DbrIconButton>
+      <h2 class="page__title dbru-text-lg dbru-text-main">Профиль</h2>
+    </div>
 
     <div v-if="!userId" class="page__state dbru-surface dbru-text-sm dbru-text-muted">
       Нужна авторизация.
@@ -79,7 +95,7 @@
 import { ref, computed, reactive, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { DbrAvatar, DbrButton, DbrCard, DbrCheckbox, DbrInput, DbrLoader } from 'dobruniaui-vue'
+import { DbrAvatar, DbrButton, DbrCard, DbrCheckbox, DbrIconButton, DbrInput, DbrLoader } from 'dobruniaui-vue'
 import { useProfileStore } from '../stores/profile-store'
 import { useSessionStore } from '../stores/session-store'
 import { useSwipeBack } from '../shared/composables/use-swipe-back'
@@ -169,6 +185,12 @@ useSwipeBack()
 .page {
   display: grid;
   gap: var(--dbru-space-3);
+}
+
+.page__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--dbru-space-1);
 }
 
 .page__title {

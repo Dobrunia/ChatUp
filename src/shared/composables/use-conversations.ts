@@ -15,6 +15,10 @@ export function useConversations() {
     }
   }
 
+  async function refreshConversations(userId: string): Promise<void> {
+    conversations.value = await fetchConversations(userId)
+  }
+
   async function openOrCreateConversation(currentUserId: string, peerUserId: string): Promise<string> {
     return ensureConversation(currentUserId, peerUserId)
   }
@@ -27,6 +31,7 @@ export function useConversations() {
     conversations,
     conversationsLoading,
     loadConversations,
+    refreshConversations,
     openOrCreateConversation,
     setConversationRead,
   }
