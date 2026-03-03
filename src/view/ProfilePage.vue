@@ -1,20 +1,7 @@
 <template>
   <section class="page">
     <div class="page__nav">
-      <DbrIconButton variant="ghost" size="sm" aria-label="Назад" @click="router.back()">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M15 18l-6-6 6-6" />
-        </svg>
-      </DbrIconButton>
+      <DbrButton variant="ghost" size="sm" @click="router.back()">←</DbrButton>
       <h2 class="page__title dbru-text-lg dbru-text-main">Профиль</h2>
     </div>
 
@@ -70,15 +57,17 @@
       <div class="profile-card__actions">
         <span
           v-if="saveMessage"
-          :class="['profile-card__save-message dbru-text-sm', saveIsError ? 'profile-card__save-message--error' : 'profile-card__save-message--success']"
-        >{{ saveMessage }}</span>
+          :class="[
+            'profile-card__save-message dbru-text-sm',
+            saveIsError
+              ? 'profile-card__save-message--error'
+              : 'profile-card__save-message--success',
+          ]"
+          >{{ saveMessage }}</span
+        >
         <div class="profile-card__action-row">
           <DbrButton variant="danger" @click="handleLogout">Выйти</DbrButton>
-          <DbrButton
-            variant="primary"
-            :disabled="saving || !isDirty"
-            @click="saveProfile"
-          >
+          <DbrButton variant="primary" :disabled="saving || !isDirty" @click="saveProfile">
             {{ saving ? 'Сохраняю...' : 'Сохранить' }}
           </DbrButton>
         </div>
@@ -92,59 +81,67 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { DbrAvatar, DbrButton, DbrCard, DbrCheckbox, DbrIconButton, DbrInput, DbrLoader } from 'dobruniaui-vue'
-import { useProfileStore } from '../stores/profile-store'
-import { useSessionStore } from '../stores/session-store'
-import { useSwipeBack } from '../shared/composables/use-swipe-back'
+import { ref, computed, reactive, watch, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import {
+  DbrAvatar,
+  DbrButton,
+  DbrCard,
+  DbrCheckbox,
+  DbrIconButton,
+  DbrInput,
+  DbrLoader,
+} from 'dobruniaui-vue';
+import { useProfileStore } from '../stores/profile-store';
+import { useSessionStore } from '../stores/session-store';
+import { useSwipeBack } from '../shared/composables/use-swipe-back';
 
-const router = useRouter()
-const sessionStore = useSessionStore()
-const profileStore = useProfileStore()
+const router = useRouter();
+const sessionStore = useSessionStore();
+const profileStore = useProfileStore();
 
-const { profile, loading } = storeToRefs(profileStore)
-const userId = computed(() => sessionStore.userId)
+const { profile, loading } = storeToRefs(profileStore);
+const userId = computed(() => sessionStore.userId);
 
-const loadError = ref<string | null>(null)
-const saving = ref(false)
-const saveMessage = ref<string | null>(null)
-const saveIsError = ref(false)
+const loadError = ref<string | null>(null);
+const saving = ref(false);
+const saveMessage = ref<string | null>(null);
+const saveIsError = ref(false);
 
 const form = reactive({
   displayName: '',
   username: '',
   avatarUrl: '',
   notificationsEnabled: true,
-})
+});
 
 watch(
   profile,
   (p) => {
-    if (!p) return
-    form.displayName = p.displayName ?? ''
-    form.username = p.username ?? ''
-    form.avatarUrl = p.avatarUrl ?? ''
-    form.notificationsEnabled = p.notificationsEnabled
+    if (!p) return;
+    form.displayName = p.displayName ?? '';
+    form.username = p.username ?? '';
+    form.avatarUrl = p.avatarUrl ?? '';
+    form.notificationsEnabled = p.notificationsEnabled;
   },
-  { immediate: true },
-)
+  { immediate: true }
+);
 
 const isDirty = computed(() => {
-  if (!profile.value) return false
+  if (!profile.value) return false;
   return (
     form.displayName !== (profile.value.displayName ?? '') ||
     form.username !== (profile.value.username ?? '') ||
     form.avatarUrl !== (profile.value.avatarUrl ?? '') ||
     form.notificationsEnabled !== profile.value.notificationsEnabled
-  )
-})
+  );
+});
 
 async function saveProfile(): Promise<void> {
-  if (!profile.value || !userId.value) return
-  saving.value = true
-  saveMessage.value = null
+  if (!profile.value || !userId.value) return;
+  saving.value = true;
+  saveMessage.value = null;
   try {
     await profileStore.save({
       ...profile.value,
@@ -152,33 +149,33 @@ async function saveProfile(): Promise<void> {
       username: form.username || null,
       avatarUrl: form.avatarUrl || null,
       notificationsEnabled: form.notificationsEnabled,
-    })
-    saveMessage.value = 'Сохранено'
-    saveIsError.value = false
+    });
+    saveMessage.value = 'Сохранено';
+    saveIsError.value = false;
   } catch (error) {
-    saveMessage.value = error instanceof Error ? error.message : 'Ошибка сохранения'
-    saveIsError.value = true
+    saveMessage.value = error instanceof Error ? error.message : 'Ошибка сохранения';
+    saveIsError.value = true;
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function handleLogout(): Promise<void> {
-  await sessionStore.logout()
-  await router.push({ name: 'login' })
+  await sessionStore.logout();
+  await router.push({ name: 'login' });
 }
 
 onMounted(async () => {
-  if (!userId.value) return
-  loadError.value = null
+  if (!userId.value) return;
+  loadError.value = null;
   try {
-    await profileStore.load()
+    await profileStore.load();
   } catch (error) {
-    loadError.value = error instanceof Error ? error.message : 'Не удалось загрузить профиль'
+    loadError.value = error instanceof Error ? error.message : 'Не удалось загрузить профиль';
   }
-})
+});
 
-useSwipeBack()
+useSwipeBack();
 </script>
 
 <style scoped>

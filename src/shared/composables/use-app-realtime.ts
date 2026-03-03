@@ -159,3 +159,28 @@ export function useAppRealtime() {
     stopAll,
   }
 }
+
+// ─── HMR cleanup (dev only) ───────────────────────────────────────────────────
+// When Vite hot-replaces this module during development, the old module-level
+// channel refs are discarded but Supabase channels remain subscribed.
+// dispose() runs before the new module version takes over, ensuring we
+// unsubscribe everything so channels aren't orphaned / doubled up.
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    if (typingStopTimer) {
+      clearTimeout(typingStopTimer)
+      typingStopTimer = null
+    }
+    globalChannel.value?.unsubscribe()
+    globalChannel.value = null
+    messageChannel.value?.unsubscribe()
+    messageChannel.value = null
+    typingChannel.value?.unsubscribe()
+    typingChannel.value = null
+    recordingChannel.value?.unsubscribe()
+    recordingChannel.value = null
+    presenceChannel.value?.unsubscribe()
+    presenceChannel.value = null
+  })
+}
