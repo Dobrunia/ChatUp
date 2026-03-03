@@ -32,25 +32,18 @@ interface PeerReadRow {
   last_read_at: string | null
 }
 
-function isDuplicateInsertError(error: { code?: string; status?: number } | null): boolean {
-  if (!error) {
-    return false
-  }
-  return error.code === '23505' || error.status === 409
-}
-
 async function ensureMembers(conversationId: string, currentUserId: string, peerUserId: string): Promise<void> {
   const selfMemberInsert = await supabase
     .from('conversation_members')
-    .insert({ conversation_id: conversationId, user_id: currentUserId })
-  if (selfMemberInsert.error && !isDuplicateInsertError(selfMemberInsert.error)) {
+    .upsert({ conversation_id: conversationId, user_id: currentUserId }, { onConflict: 'conversation_id,user_id', ignoreDuplicates: true })
+  if (selfMemberInsert.error) {
     throw selfMemberInsert.error
   }
 
   const peerMemberInsert = await supabase
     .from('conversation_members')
-    .insert({ conversation_id: conversationId, user_id: peerUserId })
-  if (peerMemberInsert.error && !isDuplicateInsertError(peerMemberInsert.error)) {
+    .upsert({ conversation_id: conversationId, user_id: peerUserId }, { onConflict: 'conversation_id,user_id', ignoreDuplicates: true })
+  if (peerMemberInsert.error) {
     throw peerMemberInsert.error
   }
 }
@@ -66,11 +59,11 @@ async function ensureSelfMemberships(userId: string): Promise<void> {
 
   const rows = data as DirectConversationRow[]
   for (const row of rows) {
-    const insertOwnMembership = await supabase
+    const upsertOwnMembership = await supabase
       .from('conversation_members')
-      .insert({ conversation_id: row.conversation_id, user_id: userId })
-    if (insertOwnMembership.error && !isDuplicateInsertError(insertOwnMembership.error)) {
-      throw insertOwnMembership.error
+      .upsert({ conversation_id: row.conversation_id, user_id: userId }, { onConflict: 'conversation_id,user_id', ignoreDuplicates: true })
+    if (upsertOwnMembership.error) {
+      throw upsertOwnMembership.error
     }
   }
 }
@@ -251,22 +244,12 @@ export async function updateLastReadAt(readState: ConversationReadState): Promis
     throw error
   }
 
-  const ensureMembership = await supabase.from('conversation_members').insert({
-    conversation_id: readState.conversationId,
-    user_id: readState.userId,
-    last_read_at: readState.lastReadAt,
-  })
-  if (ensureMembership.error && !isDuplicateInsertError(ensureMembership.error)) {
-    throw ensureMembership.error
-  }
-
-  const updateMembership = await supabase
-    .from('conversation_members')
-    .update({ last_read_at: readState.lastReadAt })
-    .eq('conversation_id', readState.conversationId)
-    .eq('user_id', readState.userId)
-  if (updateMembership.error) {
-    throw updateMembership.error
+  const upsertMembership = await supabase.from('conversation_members').upsert(
+    { conversation_id: readState.conversationId, user_id: readState.userId, last_read_at: readState.lastReadAt },
+    { onConflict: 'conversation_id,user_id' },
+  )
+  if (upsertMembership.error) {
+    throw upsertMembership.error
   }
 
   const updateMessages = await supabase
