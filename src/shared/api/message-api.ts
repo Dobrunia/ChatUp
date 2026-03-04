@@ -19,7 +19,11 @@ interface MessageRow {
 }
 
 function normalizeMedia(row: MessageRow): MediaMeta | null {
+  // DEBUG
+  console.log('[DEBUG normalizeMedia] row.media:', row.media, 'row.type:', row.type)
+  
   if (!row.media?.url || row.media.size === undefined) {
+    console.log('[DEBUG normalizeMedia] returning null - url or size missing')
     return null
   }
   return {

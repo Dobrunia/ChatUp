@@ -140,6 +140,10 @@ const messageItems = computed((): ListItem[] => {
       lastDay = day
       result.push({ kind: 'divider', key: `divider-${day}`, label: formatDay(day) })
     }
+    // DEBUG: логируем сообщения с media
+    if (msg.type !== 'text') {
+      console.log('[DEBUG] Message:', msg.type, msg.media)
+    }
     result.push({ kind: 'message', key: msg.id, msg })
   }
   return result

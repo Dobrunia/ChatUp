@@ -2,12 +2,12 @@
 
 This file is generated and intended for AI assistants and automation tools.
 
-Generated on: 2026-03-04T16:46:10.442Z
+Generated on: 2026-03-04T17:18:14.002Z
 
 ## Package Facts
 
 - Package: `dobruniaui-vue`
-- Version: `2.0.2`
+- Version: `2.0.5`
 - ESM import entry: `./dist/dobruniaui.mjs`
 - CJS require entry: `./dist/dobruniaui.cjs`
 - Types entry: `./dist/index.d.ts`
@@ -93,6 +93,26 @@ import "dobruniaui-vue/styles.css";
 - `--dbru-space-6`
 
 ## Components And Props
+
+## Named Type Aliases
+
+This section lists exported reusable type aliases (enums/unions) used by component props.
+
+| Type | Definition | Source |
+| --- | --- | --- |
+| `DbrAttachmentKind` | `"image" \| "file" \| "audio"` | `DbrChatComposer` |
+| `DbrBadgeVariant` | `"primary" \| "ghost" \| "danger"` | `DbrBadge` |
+| `DbrButtonSize` | `"sm" \| "md" \| "lg"` | `DbrButton` |
+| `DbrButtonVariant` | `"primary" \| "ghost" \| "danger"` | `DbrButton` |
+| `DbrCardVariant` | `"surface" \| "bordered"` | `DbrCard` |
+| `DbrChatBubbleDirection` | `"in" \| "out"` | `DbrChatBubble` |
+| `DbrChatBubbleKind` | `"text" \| "image" \| "audio"` | `DbrChatBubble` |
+| `DbrChatBubbleStatus` | `"none" \| "sending" \| "sent" \| "read"` | `DbrChatBubble` |
+| `DbrIconButtonSize` | `"sm" \| "md" \| "lg"` | `DbrIconButton` |
+| `DbrIconButtonVariant` | `"primary" \| "ghost" \| "danger"` | `DbrIconButton` |
+| `DbrMessageStatus` | `"unread" \| "read" \| "error"` | `DbrChatListItem` |
+| `DbrMessageType` | `"text" \| "image" \| "file" \| "voice"` | `DbrChatListItem` |
+| `DbrPresence` | `"online" \| "away" \| "offline"` | `DbrChatListItem` |
 
 ### DbrAvatar
 
