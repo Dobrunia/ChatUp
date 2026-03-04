@@ -72,206 +72,212 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, watch, watchEffect } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { DbrAvatar, DbrBadge, DbrButton, DbrChatBubble, DbrChatComposer, DbrLoader } from 'dobruniaui-vue'
-import type { DbrChatAttachment } from 'dobruniaui-vue'
-import dayjs from 'dayjs'
-import 'dayjs/locale/ru'
-import { useChatStore } from '../stores/chat-store'
-import { useConversationsStore } from '../stores/conversations-store'
-import { useSessionStore } from '../stores/session-store'
-import { usePresenceStore } from '../stores/presence-store'
-import { fetchProfile } from '../shared/api/profile-api'
-import { useSwipeBack } from '../shared/composables/use-swipe-back'
-import type { Message, MessageStatus, Profile } from '../shared/types/chat'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch, watchEffect } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { storeToRefs } from 'pinia';
+import {
+  DbrAvatar,
+  DbrBadge,
+  DbrButton,
+  DbrChatBubble,
+  DbrChatComposer,
+  DbrLoader,
+} from 'dobruniaui-vue';
+import type { DbrChatAttachment } from 'dobruniaui-vue';
+import dayjs from 'dayjs';
+import 'dayjs/locale/ru';
+import { useChatStore } from '../stores/chat-store';
+import { useConversationsStore } from '../stores/conversations-store';
+import { useSessionStore } from '../stores/session-store';
+import { usePresenceStore } from '../stores/presence-store';
+import { fetchProfile } from '../shared/api/profile-api';
+import { useSwipeBack } from '../shared/composables/use-swipe-back';
+import type { Message, MessageStatus, Profile } from '../shared/types/chat';
 
-dayjs.locale('ru')
+dayjs.locale('ru');
 
-type BubbleStatus = 'none' | 'sending' | 'sent' | 'read'
-type DividerItem = { kind: 'divider'; key: string; label: string }
-type MessageItem = { kind: 'message'; key: string; msg: Message }
-type ListItem = DividerItem | MessageItem
+type BubbleStatus = 'none' | 'sending' | 'sent' | 'read';
+type DividerItem = { kind: 'divider'; key: string; label: string };
+type MessageItem = { kind: 'message'; key: string; msg: Message };
+type ListItem = DividerItem | MessageItem;
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const chatStore = useChatStore()
-const conversationsStore = useConversationsStore()
-const sessionStore = useSessionStore()
-const presenceStore = usePresenceStore()
+const chatStore = useChatStore();
+const conversationsStore = useConversationsStore();
+const sessionStore = useSessionStore();
+const presenceStore = usePresenceStore();
 
-const { conversations } = storeToRefs(conversationsStore)
+const { conversations } = storeToRefs(conversationsStore);
 
-const conversationId = route.params.conversationId as string
-const currentUserId = sessionStore.userId!
+const conversationId = route.params.conversationId as string;
+const currentUserId = sessionStore.userId!;
 
-const draftText = ref('')
-const messagesEl = ref<HTMLElement | null>(null)
-const sentinelEl = ref<HTMLElement | null>(null)
-const peerProfile = ref<Profile | null>(null)
+const draftText = ref('');
+const messagesEl = ref<HTMLElement | null>(null);
+const sentinelEl = ref<HTMLElement | null>(null);
+const peerProfile = ref<Profile | null>(null);
 
 // Flag to skip auto-scroll-to-bottom while prepending older messages
-let prepending = false
+let prepending = false;
 
-const conversation = computed(() => conversations.value.find((c) => c.id === conversationId))
+const conversation = computed(() => conversations.value.find((c) => c.id === conversationId));
 
 const peerUserId = computed(() => {
-  if (!conversation.value) return null
-  return conversation.value.memberIds.find((id) => id !== currentUserId) ?? null
-})
+  if (!conversation.value) return null;
+  return conversation.value.memberIds.find((id) => id !== currentUserId) ?? null;
+});
 
 const peerIsOnline = computed(() =>
-  peerUserId.value ? presenceStore.isOnline(peerUserId.value) : false,
-)
+  peerUserId.value ? presenceStore.isOnline(peerUserId.value) : false
+);
 
 const typingText = computed(() => {
-  const typing = chatStore.typingUsers.filter((id) => id !== currentUserId)
-  return typing.length > 0 ? 'Печатает...' : ''
-})
+  const typing = chatStore.typingUsers.filter((id) => id !== currentUserId);
+  return typing.length > 0 ? 'Печатает...' : '';
+});
 
 const messageItems = computed((): ListItem[] => {
-  const result: ListItem[] = []
-  let lastDay = ''
+  const result: ListItem[] = [];
+  let lastDay = '';
   for (const msg of chatStore.messages) {
-    const day = dayjs(msg.createdAt).format('YYYY-MM-DD')
+    const day = dayjs(msg.createdAt).format('YYYY-MM-DD');
     if (day !== lastDay) {
-      lastDay = day
-      result.push({ kind: 'divider', key: `divider-${day}`, label: formatDay(day) })
+      lastDay = day;
+      result.push({ kind: 'divider', key: `divider-${day}`, label: formatDay(day) });
     }
-    // DEBUG: логируем сообщения с media
-    if (msg.type !== 'text') {
-      console.log('[DEBUG] Message:', msg.type, msg.media)
-    }
-    result.push({ kind: 'message', key: msg.id, msg })
+    result.push({ kind: 'message', key: msg.id, msg });
   }
-  return result
-})
+  return result;
+});
 
 function formatDay(day: string): string {
-  const today = dayjs().format('YYYY-MM-DD')
-  const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
-  if (day === today) return 'Сегодня'
-  if (day === yesterday) return 'Вчера'
-  return dayjs(day).format('D MMMM YYYY')
+  const today = dayjs().format('YYYY-MM-DD');
+  const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+  if (day === today) return 'Сегодня';
+  if (day === yesterday) return 'Вчера';
+  return dayjs(day).format('D MMMM YYYY');
 }
 
 function formatTime(isoString: string): string {
-  return dayjs(isoString).format('HH:mm')
+  return dayjs(isoString).format('HH:mm');
 }
 
 function toBubbleStatus(status: MessageStatus): BubbleStatus {
-  if (status === 'failed') return 'none'
-  return status
+  if (status === 'failed') return 'none';
+  return status;
 }
 
 function isNearBottom(): boolean {
-  const el = messagesEl.value
-  if (!el) return true
-  return el.scrollHeight - el.scrollTop - el.clientHeight < 100
+  const el = messagesEl.value;
+  if (!el) return true;
+  return el.scrollHeight - el.scrollTop - el.clientHeight < 100;
 }
 
 async function scrollToBottom(): Promise<void> {
-  await nextTick()
+  await nextTick();
   if (messagesEl.value) {
-    messagesEl.value.scrollTop = messagesEl.value.scrollHeight
+    messagesEl.value.scrollTop = messagesEl.value.scrollHeight;
   }
 }
 
 async function loadOlderWithScrollPreserve(): Promise<void> {
-  const el = messagesEl.value
-  if (!el) return
-  const prevScrollHeight = el.scrollHeight
-  const prevScrollTop = el.scrollTop
-  prepending = true
-  const loaded = await chatStore.loadOlder()
-  prepending = false
+  const el = messagesEl.value;
+  if (!el) return;
+  const prevScrollHeight = el.scrollHeight;
+  const prevScrollTop = el.scrollTop;
+  prepending = true;
+  const loaded = await chatStore.loadOlder();
+  prepending = false;
   if (loaded) {
-    await nextTick()
-    el.scrollTop = el.scrollHeight - prevScrollHeight + prevScrollTop
+    await nextTick();
+    el.scrollTop = el.scrollHeight - prevScrollHeight + prevScrollTop;
   }
 }
 
 async function retryMessage(messageId: string): Promise<void> {
-  await chatStore.retryFailed(messageId)
+  await chatStore.retryFailed(messageId);
 }
 
 async function getAudioDuration(file: File): Promise<number> {
   return new Promise((resolve) => {
-    const audio = new Audio()
-    audio.preload = 'metadata'
+    const audio = new Audio();
+    audio.preload = 'metadata';
     audio.onloadedmetadata = () => {
-      resolve(Math.round(audio.duration))
-      URL.revokeObjectURL(audio.src)
-    }
+      resolve(Math.round(audio.duration));
+      URL.revokeObjectURL(audio.src);
+    };
     audio.onerror = () => {
-      resolve(0)
-      URL.revokeObjectURL(audio.src)
-    }
-    audio.src = URL.createObjectURL(file)
-  })
+      resolve(0);
+      URL.revokeObjectURL(audio.src);
+    };
+    audio.src = URL.createObjectURL(file);
+  });
 }
 
-async function handleSend(payload: { text: string; attachments: DbrChatAttachment[] }): Promise<void> {
-  if (!currentUserId) return
+async function handleSend(payload: {
+  text: string;
+  attachments: DbrChatAttachment[];
+}): Promise<void> {
+  if (!currentUserId) return;
   try {
     // Обрабатываем вложения по типам
     for (const attachment of payload.attachments) {
       if (attachment.kind === 'image') {
-        await chatStore.sendImages(conversationId, currentUserId, [attachment.file])
+        await chatStore.sendImages(conversationId, currentUserId, [attachment.file]);
       } else if (attachment.kind === 'audio') {
-        const duration = await getAudioDuration(attachment.file)
-        await chatStore.sendAudio(conversationId, currentUserId, attachment.file, duration)
+        const duration = await getAudioDuration(attachment.file);
+        await chatStore.sendAudio(conversationId, currentUserId, attachment.file, duration);
       }
       // kind === 'file' не поддерживается в текущей версии
     }
-    const text = payload.text.trim()
+    const text = payload.text.trim();
     if (text) {
-      await chatStore.sendText(conversationId, currentUserId, text)
-      draftText.value = ''
+      await chatStore.sendText(conversationId, currentUserId, text);
+      draftText.value = '';
     }
-    await conversationsStore.markRead(currentUserId, conversationId)
-    await scrollToBottom()
+    await conversationsStore.markRead(currentUserId, conversationId);
+    await scrollToBottom();
   } catch {
     // use-chat marks the message as 'failed' — user can tap to retry
   }
 }
 
 async function handleTyping(isTyping: boolean): Promise<void> {
-  if (!isTyping || !currentUserId) return
-  await chatStore.onTyping(conversationId, currentUserId)
+  if (!isTyping || !currentUserId) return;
+  await chatStore.onTyping(conversationId, currentUserId);
 }
 
 // IntersectionObserver: load older messages when sentinel scrolls into view
 watchEffect(
   (onCleanup) => {
-    const sentinel = sentinelEl.value
-    const container = messagesEl.value
-    if (!sentinel || !container) return
+    const sentinel = sentinelEl.value;
+    const container = messagesEl.value;
+    if (!sentinel || !container) return;
 
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && chatStore.hasMoreMessages && !chatStore.loadingOlder) {
-          void loadOlderWithScrollPreserve()
+          void loadOlderWithScrollPreserve();
         }
       },
-      { root: container, threshold: 0 },
-    )
-    obs.observe(sentinel)
-    onCleanup(() => obs.disconnect())
+      { root: container, threshold: 0 }
+    );
+    obs.observe(sentinel);
+    onCleanup(() => obs.disconnect());
   },
-  { flush: 'post' },
-)
+  { flush: 'post' }
+);
 
 // Scroll to bottom when new messages arrive (but not when prepending older ones)
 watch(
   () => chatStore.messages.length,
   async (newLen, oldLen) => {
-    if (newLen <= oldLen || prepending) return
-    if (isNearBottom()) await scrollToBottom()
-  },
-)
+    if (newLen <= oldLen || prepending) return;
+    if (isNearBottom()) await scrollToBottom();
+  }
+);
 
 // AppLayout (parent) mounts after ChatPage (child), so conversations may not be
 // loaded yet when onMounted runs. Watch reactively so profile loads as soon as
@@ -279,29 +285,29 @@ watch(
 watch(
   peerUserId,
   async (peerId) => {
-    if (!peerId) return
+    if (!peerId) return;
     try {
-      peerProfile.value = await fetchProfile(peerId)
+      peerProfile.value = await fetchProfile(peerId);
     } catch {
       // Show placeholder if profile fetch fails
     }
-    await presenceStore.trackPeer(peerId)
+    await presenceStore.trackPeer(peerId);
   },
-  { immediate: true },
-)
+  { immediate: true }
+);
 
 onMounted(async () => {
-  await chatStore.enterConversation(conversationId)
-  await scrollToBottom()
-  await conversationsStore.markRead(currentUserId, conversationId)
-})
+  await chatStore.enterConversation(conversationId);
+  await scrollToBottom();
+  await conversationsStore.markRead(currentUserId, conversationId);
+});
 
 onUnmounted(() => {
-  chatStore.leaveConversation()
-  presenceStore.stopTracking()
-})
+  chatStore.leaveConversation();
+  presenceStore.stopTracking();
+});
 
-useSwipeBack()
+useSwipeBack();
 </script>
 
 <style scoped>

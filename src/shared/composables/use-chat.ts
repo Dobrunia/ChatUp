@@ -88,9 +88,10 @@ export function useChat() {
       throw new Error('Audio max duration is 2 minutes')
     }
     const mediaUrl = await uploadMedia(`audio/${conversationId}`, file)
+    // Явно указываем type: 'audio', т.к. Supabase может определить неправильно по content-type
     await sendMessage(conversationId, senderId, 'audio', null, {
       url: mediaUrl,
-      type: 'audio',
+      type: 'audio', // принудительно audio
       size: file.size,
       duration,
     })

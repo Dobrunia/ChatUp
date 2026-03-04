@@ -1,37 +1,34 @@
-import type { MediaMeta, Message, MessageType } from '../types/chat'
-import { supabase } from './supabase-client'
+import type { MediaMeta, Message, MessageType } from '../types/chat';
+import { supabase } from './supabase-client';
 
 interface MessageRow {
-  id: string
-  conversation_id: string
-  sender_id: string
-  type: MessageType
-  status: 'sent' | 'read'
-  body: string | null
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  type: MessageType;
+  status: 'sent' | 'read';
+  body: string | null;
   media: {
-    url?: string
-    type?: MessageType
-    size?: number
-    duration?: number
-  } | null
-  client_id: string
-  created_at: string
+    url?: string;
+    type?: MessageType;
+    size?: number;
+    duration?: number;
+  } | null;
+  client_id: string;
+  created_at: string;
 }
 
 function normalizeMedia(row: MessageRow): MediaMeta | null {
-  // DEBUG
-  console.log('[DEBUG normalizeMedia] row.media:', row.media, 'row.type:', row.type)
-  
   if (!row.media?.url || row.media.size === undefined) {
-    console.log('[DEBUG normalizeMedia] returning null - url or size missing')
-    return null
+    console.log('[DEBUG normalizeMedia] returning null - url or size missing');
+    return null;
   }
   return {
     url: row.media.url,
     type: row.media.type ?? row.type,
     size: row.media.size,
     duration: row.media.duration,
-  }
+  };
 }
 
 function normalizeMessage(row: MessageRow): Message {
@@ -44,13 +41,13 @@ function normalizeMessage(row: MessageRow): Message {
     media: normalizeMedia(row),
     createdAt: row.created_at,
     status: row.status ?? 'sent',
-  }
+  };
 }
 
 export async function fetchMessages(
   conversationId: string,
   limit = 30,
-  beforeCreatedAt?: string,
+  beforeCreatedAt?: string
 ): Promise<Message[]> {
   let query = supabase
     .from('messages')
@@ -58,15 +55,15 @@ export async function fetchMessages(
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: false })
     .order('id', { ascending: false })
-    .limit(limit)
+    .limit(limit);
   if (beforeCreatedAt) {
-    query = query.lt('created_at', beforeCreatedAt)
+    query = query.lt('created_at', beforeCreatedAt);
   }
-  const { data, error } = await query
+  const { data, error } = await query;
   if (error) {
-    throw error
+    throw error;
   }
-  return (data as MessageRow[]).reverse().map(normalizeMessage)
+  return (data as MessageRow[]).reverse().map(normalizeMessage);
 }
 
 export async function insertMessage(message: Message): Promise<Message> {
@@ -89,9 +86,9 @@ export async function insertMessage(message: Message): Promise<Message> {
       client_id: message.id,
     })
     .select('id,conversation_id,sender_id,type,status,body,media,client_id,created_at')
-    .single<MessageRow>()
+    .single<MessageRow>();
   if (error) {
-    throw error
+    throw error;
   }
-  return normalizeMessage(data)
+  return normalizeMessage(data);
 }
