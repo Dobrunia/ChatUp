@@ -193,12 +193,34 @@ async function retryMessage(messageId: string): Promise<void> {
   await chatStore.retryFailed(messageId)
 }
 
+async function getAudioDuration(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const audio = new Audio()
+    audio.preload = 'metadata'
+    audio.onloadedmetadata = () => {
+      resolve(Math.round(audio.duration))
+      URL.revokeObjectURL(audio.src)
+    }
+    audio.onerror = () => {
+      resolve(0)
+      URL.revokeObjectURL(audio.src)
+    }
+    audio.src = URL.createObjectURL(file)
+  })
+}
+
 async function handleSend(payload: { text: string; attachments: DbrChatAttachment[] }): Promise<void> {
   if (!currentUserId) return
   try {
-    if (payload.attachments.length > 0) {
-      const files = payload.attachments.map((a) => a.file)
-      await chatStore.sendImages(conversationId, currentUserId, files)
+    // Обрабатываем вложения по типам
+    for (const attachment of payload.attachments) {
+      if (attachment.kind === 'image') {
+        await chatStore.sendImages(conversationId, currentUserId, [attachment.file])
+      } else if (attachment.kind === 'audio') {
+        const duration = await getAudioDuration(attachment.file)
+        await chatStore.sendAudio(conversationId, currentUserId, attachment.file, duration)
+      }
+      // kind === 'file' не поддерживается в текущей версии
     }
     const text = payload.text.trim()
     if (text) {

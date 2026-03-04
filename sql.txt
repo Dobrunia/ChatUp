@@ -453,3 +453,32 @@ for update
 to authenticated
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
+
+-- =========================
+-- 12) STORAGE BUCKET: chat-media
+-- =========================
+-- Storage bucket создаётся через Supabase Dashboard или API:
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('chat-media', 'chat-media', true);
+-- Но для полноты схемы добавляем политики RLS для bucket:
+
+-- Создать bucket (если ещё не создан)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('chat-media', 'chat-media', true)
+ON CONFLICT (id) DO NOTHING;
+
+  -- Политики
+drop policy if exists "storage_insert_authenticated" on storage.objects;
+drop policy if exists "storage_select_public" on storage.objects;
+create policy "storage_insert_authenticated"
+on storage.objects
+for insert
+to authenticated
+with check (bucket_id = 'chat-media');
+create policy "storage_select_public"
+on storage.objects
+for select
+to public
+using (bucket_id = 'chat-media');
+
+-- Политика: только владелец может удалять свои файлы (опционально)
+-- Для чата обычно не требуется, так как файлы удаляются редко
