@@ -106,11 +106,15 @@ import "dobruniaui-vue/styles.css";
 
 ## Component Usage Notes
 
+### DbrBadge
+
+- Use as overlay notification: wrap target content inside default slot.
+- Pass badge marker via `badge` slot or use `dot` for dot-only mode. Default position is top-right.
+
 ### DbrChip
 
 - Pass chip content via default slot (text, icon, or mixed content).
 - Use `variant` for visual style only (`primary|ghost|danger`).
-- Use `type="removable"` for chips with a remove button; emits `remove` when clicked.
 
 ### DbrCheckbox
 
@@ -156,6 +160,7 @@ This section lists exported reusable type aliases (enums/unions) used by compone
 | Type | Definition | Source |
 | --- | --- | --- |
 | `DbrAttachmentKind` | `"image" \| "file" \| "audio"` | `DbrChatComposer` |
+| `DbrBadgeVariant` | `"primary" \| "danger" \| "neutral"` | `DbrBadge` |
 | `DbrButtonGroupSize` | `'sm' \| 'md' \| 'lg'` | `DbrButtonGroup` |
 | `DbrButtonGroupValue` | `string \| number` | `DbrButtonGroup` |
 | `DbrButtonSize` | `"sm" \| "md" \| "lg"` | `DbrButton` |
@@ -184,6 +189,17 @@ Source interface: `DbrAvatarProps`
 | `name` | `string` | `""` | /** Name used to generate initials fallback. / |
 | `size` | `"sm" \| "md" \| "lg"` | `"md"` | /** Avatar size. / |
 | `shape` | `"circle" \| "rounded"` | `"circle"` | /** Avatar shape. / |
+
+### DbrBadge
+
+Source interface: `DbrBadgeProps`
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `variant` | `DbrBadgeVariant` | `"primary"` | /** Badge color style. / |
+| `dot` | `boolean` | `false` | /** Show dot-only badge. / |
+| `offsetX` | `string` | `"-6px"` | /** Horizontal offset from right edge. / |
+| `offsetY` | `string` | `"-6px"` | /** Vertical offset from top edge. / |
 
 ### DbrButton
 
