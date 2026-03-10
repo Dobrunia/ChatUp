@@ -1,0 +1,86 @@
+name: Android APK Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "ndk;29.0.13846066"
+          {
+            echo "ANDROID_HOME=$ANDROID_SDK_ROOT"
+            echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/29.0.13846066"
+            echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/29.0.13846066"
+          } >> "$GITHUB_ENV"
+
+      - name: Restore Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri -> target
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Android debug APKs
+        run: npm run tauri:android:build:ci
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish rolling GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: main-latest
+          name: Main Latest APK
+          prerelease: true
+          make_latest: true
+          generate_release_notes: true
+          overwrite_files: true
+          files: |
+            src-tauri/gen/android/app/build/outputs/apk/**/*.apk
