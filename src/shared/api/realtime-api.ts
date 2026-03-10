@@ -1,12 +1,44 @@
 import type { RealtimeChannel } from '@supabase/supabase-js'
-import type { PresenceState, RecordingEventPayload, TypingEventPayload } from '../types/chat'
+import type {
+  MessageType,
+  PresenceState,
+  RecordingEventPayload,
+  TypingEventPayload,
+} from '../types/chat'
 import { supabase } from './supabase-client'
 
 type MessageInsertHandler = (messageId: string) => void
 type TypingHandler = (payload: TypingEventPayload) => void
 type RecordingHandler = (payload: RecordingEventPayload) => void
-type ConversationsUpdateHandler = () => void
+
+export interface RealtimeMessageEvent {
+  id: string
+  conversationId: string
+  senderId: string
+  type: MessageType
+  body: string | null
+  createdAt: string
+}
+
+export type GlobalRealtimeEvent =
+  | { kind: 'message-insert'; message: RealtimeMessageEvent }
+  | { kind: 'message-update'; message: RealtimeMessageEvent }
+  | { kind: 'conversation-member-insert' }
+  | { kind: 'conversation-member-update' }
+
+type ConversationsUpdateHandler = (event: GlobalRealtimeEvent) => void
 type PresenceUpdateHandler = (state: PresenceState) => void
+
+function normalizeRealtimeMessage(payload: { new: Record<string, unknown> }): RealtimeMessageEvent {
+  return {
+    id: payload.new.id as string,
+    conversationId: payload.new.conversation_id as string,
+    senderId: payload.new.sender_id as string,
+    type: payload.new.type as MessageType,
+    body: (payload.new.body as string | null) ?? null,
+    createdAt: payload.new.created_at as string,
+  }
+}
 
 export function subscribeMessages(conversationId: string, handler: MessageInsertHandler): RealtimeChannel {
   return supabase
@@ -71,17 +103,31 @@ export function subscribeConversationsGlobal(
 ): RealtimeChannel {
   return supabase
     .channel(`conversations-global:${userId}`)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, handler)
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, handler)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+      handler({
+        kind: 'message-insert',
+        message: normalizeRealtimeMessage(payload),
+      })
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload) => {
+      handler({
+        kind: 'message-update',
+        message: normalizeRealtimeMessage(payload),
+      })
+    })
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'conversation_members' },
-      handler,
+      () => {
+        handler({ kind: 'conversation-member-insert' })
+      },
     )
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'conversation_members' },
-      handler,
+      () => {
+        handler({ kind: 'conversation-member-update' })
+      },
     )
     .subscribe()
 }

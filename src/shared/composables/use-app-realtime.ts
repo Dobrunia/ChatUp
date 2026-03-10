@@ -1,6 +1,7 @@
 import { ref, shallowRef } from 'vue'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import {
+  type GlobalRealtimeEvent,
   subscribeConversationsGlobal,
   subscribePeerPresence,
   subscribeMessages,
@@ -9,6 +10,7 @@ import {
   sendTyping,
   sendRecording,
 } from '../api/realtime-api'
+import { notifyIncomingMessage, shouldNotifyForRealtimeMessage } from '../services/native-notification-service'
 import type { PresenceState, RecordingEventPayload, TypingEventPayload } from '../types/chat'
 
 // ─── Singleton state (module-level) ──────────────────────────────────────────
@@ -24,6 +26,7 @@ const presenceChannel = shallowRef<RealtimeChannel | null>(null)
 
 const typingByConversation = ref<Record<string, string[]>>({})
 const recordingByConversation = ref<Record<string, string[]>>({})
+const activeConversationId = ref<string | null>(null)
 
 let typingStopTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -45,13 +48,32 @@ function updateRecording(payload: RecordingEventPayload): void {
       : previous.filter((id) => id !== payload.userId)
 }
 
+async function handleGlobalRealtimeEvent(
+  userId: string,
+  event: GlobalRealtimeEvent,
+  onUpdate: () => void,
+): Promise<void> {
+  onUpdate()
+
+  if (
+    event.kind !== 'message-insert' ||
+    !shouldNotifyForRealtimeMessage(userId, activeConversationId.value, event.message)
+  ) {
+    return
+  }
+
+  await notifyIncomingMessage(event.message)
+}
+
 // ─── Public composable ────────────────────────────────────────────────────────
 
 export function useAppRealtime() {
   // ── Global: new messages / new conversation members ──────────────────────
   function startGlobal(userId: string, onUpdate: () => void): void {
     if (globalChannel.value) return // already running
-    globalChannel.value = subscribeConversationsGlobal(userId, onUpdate)
+    globalChannel.value = subscribeConversationsGlobal(userId, (event) => {
+      void handleGlobalRealtimeEvent(userId, event, onUpdate)
+    })
   }
 
   function stopGlobal(): void {
@@ -62,6 +84,7 @@ export function useAppRealtime() {
   // ── Per-conversation: messages, typing, recording ─────────────────────────
   function startConversation(conversationId: string, onMessage: () => void): void {
     stopConversation()
+    activeConversationId.value = conversationId
     messageChannel.value = subscribeMessages(conversationId, onMessage)
     typingChannel.value = subscribeTyping(conversationId, updateTyping)
     recordingChannel.value = subscribeRecording(conversationId, updateRecording)
@@ -72,6 +95,7 @@ export function useAppRealtime() {
       clearTimeout(typingStopTimer)
       typingStopTimer = null
     }
+    activeConversationId.value = null
     messageChannel.value?.unsubscribe()
     messageChannel.value = null
     typingChannel.value?.unsubscribe()
@@ -174,6 +198,7 @@ if (import.meta.hot) {
     }
     globalChannel.value?.unsubscribe()
     globalChannel.value = null
+    activeConversationId.value = null
     messageChannel.value?.unsubscribe()
     messageChannel.value = null
     typingChannel.value?.unsubscribe()

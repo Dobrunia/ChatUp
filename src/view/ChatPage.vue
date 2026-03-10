@@ -38,7 +38,7 @@
 
         <template v-for="item in messageItems" :key="item.key">
           <div v-if="item.kind === 'divider'" class="chat-page__divider">
-            <DbrBadge variant="ghost" :text="item.label" />
+            <DbrChip variant="ghost">{{ item.label }}</DbrChip>
           </div>
           <DbrChatBubble
             v-else
@@ -77,7 +77,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import {
   DbrAvatar,
-  DbrBadge,
+  DbrChip,
   DbrButton,
   DbrChatBubble,
   DbrChatComposer,

@@ -1,4 +1,5 @@
 import { setPresence } from '../../shared/api/presence-api'
+import { initNativeNotifications } from '../../shared/services/native-notification-service'
 import { usePush } from '../../shared/composables/use-push'
 
 export async function initBootProviders(userId: string): Promise<string[]> {
@@ -15,6 +16,12 @@ export async function initBootProviders(userId: string): Promise<string[]> {
     await push.requestAndRegisterPush(userId)
   } catch {
     issues.push('Push не инициализирован')
+  }
+
+  try {
+    await initNativeNotifications()
+  } catch {
+    issues.push('Tauri notifications не инициализированы')
   }
 
   return issues
