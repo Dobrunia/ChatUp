@@ -1,0 +1,25 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bubble" x1="112" y1="96" x2="400" y2="416" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2AA7FF"/>
+      <stop offset="1" stop-color="#1467FF"/>
+    </linearGradient>
+    <filter id="shadow" x="54" y="70" width="404" height="372" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="18"/>
+      <feGaussianBlur stdDeviation="21"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.0392157 0 0 0 0 0.14902 0 0 0 0 0.435294 0 0 0 0.22 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_1" result="shape"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <path d="M176 102H336C385.706 102 426 142.294 426 192V255C426 304.706 385.706 345 336 345H258.153L190.608 400.404C180.39 408.785 165 401.517 165 388.302V345H176C126.294 345 86 304.706 86 255V192C86 142.294 126.294 102 176 102Z" fill="url(#bubble)"/>
+    <path d="M176 118H336C376.869 118 410 151.131 410 192V255C410 295.869 376.869 329 336 329H252.421L181 387.567V329H176C135.131 329 102 295.869 102 255V192C102 151.131 135.131 118 176 118Z" stroke="#0F4ED1" stroke-width="10"/>
+    <circle cx="188" cy="224" r="24" fill="white"/>
+    <circle cx="256" cy="224" r="24" fill="white"/>
+    <circle cx="324" cy="224" r="24" fill="white"/>
+    <path d="M312 138C333.706 138 354.094 145.87 370.271 160.059" stroke="white" stroke-width="14" stroke-linecap="round" opacity="0.4"/>
+  </g>
+</svg>

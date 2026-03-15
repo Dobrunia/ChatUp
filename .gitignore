@@ -17,16 +17,18 @@ src-tauri/target/
 src-tauri/gen/schemas
 
 # Android (Tauri gen)
-src-tauri/gen/android
 src-tauri/gen/android/.gradle
+src-tauri/gen/android/**/.gradle/
 src-tauri/gen/android/local.properties
 src-tauri/gen/android/.idea/
 src-tauri/gen/android/.DS_Store
 src-tauri/gen/android/build/
+src-tauri/gen/android/**/build/
 src-tauri/gen/android/captures/
 src-tauri/gen/android/.externalNativeBuild/
 src-tauri/gen/android/.cxx/
 src-tauri/gen/android/key.properties
+src-tauri/gen/android/keys/
 src-tauri/gen/android/.tauri
 src-tauri/gen/android/tauri.settings.gradle
 src-tauri/gen/android/app/src/main/**/generated/

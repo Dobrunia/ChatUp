@@ -1,0 +1,4 @@
+storeFile=../keys/chatup-release.jks
+storePassword=CHANGE_ME
+keyAlias=chatup
+keyPassword=CHANGE_ME

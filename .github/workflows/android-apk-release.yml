@@ -63,7 +63,7 @@ jobs:
         run: npm ci
 
       - name: Build Android debug APKs
-        run: npm run tauri:android:build:ci
+        run: npx tauri android build --ci --debug --apk --split-per-abi --target aarch64 x86_64
 
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4

@@ -4,22 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
-    "tauri:android:init": "tauri android init",
-    "tauri:android:init:sdk": "cross-env ANDROID_HOME=E:\\Android\\Sdk ANDROID_SDK_ROOT=E:\\Android\\Sdk CARGO_HOME=E:\\Android\\cargo GRADLE_USER_HOME=E:\\Android\\gradle tauri android init",
-    "tauri:android:dev": "tauri android dev",
-    "tauri:android:dev:sdk": "cross-env ANDROID_HOME=E:\\Android\\Sdk ANDROID_SDK_ROOT=E:\\Android\\Sdk CARGO_HOME=E:\\Android\\cargo GRADLE_USER_HOME=E:\\Android\\gradle tauri android dev",
-    "tauri:android:build": "tauri android build",
-    "tauri:android:build:sdk": "cross-env ANDROID_HOME=E:\\Android\\Sdk ANDROID_SDK_ROOT=E:\\Android\\Sdk CARGO_HOME=E:\\Android\\cargo GRADLE_USER_HOME=E:\\Android\\gradle tauri android build",
-    "tauri:android:build:ci": "tauri android build --ci --debug --apk --split-per-abi --target aarch64 x86_64",
-    "typecheck": "vue-tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "web:dev": "vite",
+    "web:build": "vue-tsc --noEmit && vite build",
+    "android:dev": "cross-env ANDROID_HOME=E:\\Android\\Sdk ANDROID_SDK_ROOT=E:\\Android\\Sdk CARGO_HOME=E:\\Android\\cargo GRADLE_USER_HOME=E:\\Android\\gradle tauri android dev",
+    "android:build": "cross-env ANDROID_HOME=E:\\Android\\Sdk ANDROID_SDK_ROOT=E:\\Android\\Sdk CARGO_HOME=E:\\Android\\cargo GRADLE_USER_HOME=E:\\Android\\gradle tauri android build"
   },
   "dependencies": {
     "@capacitor/android": "8.1.0",
